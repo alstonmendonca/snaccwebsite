@@ -31,7 +31,7 @@ export default function Cart() {
     const fetchCartDetails = async () => {
       try {
         setLoading(true);
-        const res = await axios.get('/users/cart/details', {
+        const res = await axios.get('http://localhost:5000/users/cart/details', {
           headers: { Authorization: `Bearer ${token}` },
         });
         setCartItems(res.data);
@@ -49,12 +49,12 @@ export default function Cart() {
     if (newQuantity < 1) return; // prevent quantity less than 1
     try {
       await axios.post(
-        '/users/cart/add',
+        'http://localhost:5000/users/cart/add',
         { fid, quantity: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Re-fetch cart after update
-      const res = await axios.get('/users/cart/details', {
+      const res = await axios.get('http://localhost:5000/users/cart/details', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCartItems(res.data);
@@ -66,12 +66,12 @@ export default function Cart() {
   const removeItem = async (fid) => {
     try {
       await axios.post(
-        '/users/cart/remove',
+        'http://localhost:5000/users/cart/remove',
         { fid },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       // Re-fetch cart after removal
-      const res = await axios.get('/users/cart/details', {
+      const res = await axios.get('http://localhost:5000/users/cart/details', {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCartItems(res.data);
