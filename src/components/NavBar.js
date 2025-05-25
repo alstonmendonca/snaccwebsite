@@ -111,6 +111,7 @@ function Navbar() {
   const navLinks = [
     { to: "/", label: "Home" },
     { to: "/menu", label: "Menu" },
+  ...(isLoggedIn ? [{ to: "/cart", label: "View Cart" }] : []),
     { to: "/about", label: "About" },
   ];
 
