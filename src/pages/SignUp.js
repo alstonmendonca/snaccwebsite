@@ -52,7 +52,7 @@ export default function SignUp() {
     }
 
     try {
-      await axios.post('http://localhost:5000/users/signup', {
+      await axios.post('/users/signup', {
         name,
         email,
         password,

@@ -23,7 +23,7 @@ export default function Profile() {
 
     const fetchProfile = async () => {
       try {
-        const res = await axios.get('http://localhost:5000/users/profile', {
+        const res = await axios.get('/users/profile', {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUser(res.data);
@@ -50,7 +50,7 @@ export default function Profile() {
     try {
       const { name, mobile, dob, address } = editedUser;
       const res = await axios.put(
-        'http://localhost:5000/users/profile',
+        '/users/profile',
         { name, mobile, dob, address },
         { headers: { Authorization: `Bearer ${token}` } }
       );
