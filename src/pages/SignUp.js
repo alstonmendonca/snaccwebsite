@@ -57,12 +57,14 @@ export default function SignUp() {
         email,
         password,
         mobile: `+91${phone}`,
+        orders: [] // ✅ Add this line
       });
       setSuccess(true);
     } catch (err) {
       setError(err.response?.data?.error || 'Sign up failed');
     }
   };
+
 
   if (success) {
     return (

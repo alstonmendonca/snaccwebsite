@@ -21,6 +21,7 @@ export function AuthProvider({ children }) {
 
   // login receives token and user info (e.g. { email: 'abc@x.com' })
   const login = (token, userData) => {
+    // userData should include at least userId and email
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(userData));
     setIsLoggedIn(true);
