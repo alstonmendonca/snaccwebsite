@@ -15,6 +15,20 @@ import {
 } from '@mui/material';
 import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
 import SearchIcon from '@mui/icons-material/Search';
+import { motion } from 'framer-motion';
+
+const cardVariants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: (i) => ({
+    opacity: 1,
+    y: 0,
+    transition: {
+      delay: i * 0.08,
+      duration: 0.4,
+      ease: 'easeOut',
+    },
+  }),
+};
 
 export default function Menu() {
   const [items, setItems] = useState([]);
@@ -34,7 +48,6 @@ export default function Menu() {
       });
   }, []);
 
-  // Filter items by name based on search term (case insensitive)
   const filteredItems = items.filter((item) =>
     item.fname.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -81,14 +94,7 @@ export default function Menu() {
             onChange={(e) => setSearchTerm(e.target.value)}
             InputProps={{
               startAdornment: (
-                <InputAdornment
-                  position="start"
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',  // vertically center icon wrapper
-                    marginRight: 0.5,         // small right margin for spacing
-                  }}
-                >
+                <InputAdornment position="start">
                   <SearchIcon sx={{ fontSize: 27, color: 'rgba(255,255,255,0.7)' }} />
                 </InputAdornment>
               ),
@@ -113,7 +119,6 @@ export default function Menu() {
               },
             }}
           />
-
         </Box>
 
         {loading ? (
@@ -145,73 +150,80 @@ export default function Menu() {
             }}
           >
             {filteredItems.length > 0 ? (
-              filteredItems.map((item) => (
-                <Card
+              filteredItems.map((item, index) => (
+                <motion.div
                   key={item._id}
-                  sx={{
-                    backgroundColor: '#111',
-                    color: '#fff',
-                    borderRadius: 3,
-                    boxShadow: '0 4px 20px rgba(255,255,255,0.05)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    minHeight: 240,
-                    width: '100%',
-                    flexShrink: 0,
-                    scrollSnapAlign: 'start',
-                  }}
+                  custom={index}
+                  initial="hidden"
+                  animate="visible"
+                  variants={cardVariants}
                 >
-                  <CardContent
+                  <Card
                     sx={{
+                      backgroundColor: '#111',
+                      color: '#fff',
+                      borderRadius: 3,
+                      boxShadow: '0 4px 20px rgba(255,255,255,0.05)',
                       display: 'flex',
                       flexDirection: 'column',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      textAlign: 'center',
-                      flexGrow: 1,
+                      justifyContent: 'space-between',
+                      minHeight: 240,
+                      width: '100%',
+                      flexShrink: 0,
+                      scrollSnapAlign: 'start',
                     }}
                   >
-                    <Typography variant="h6" gutterBottom>
-                      {item.fname}
-                    </Typography>
-                    <Typography variant="body2" sx={{ mb: 1, color: '#ccc' }}>
-                      ₹{item.cost}
-                    </Typography>
-                    <Chip
-                      label={item.veg ? 'Veg' : 'Non-Veg'}
-                      variant="outlined"
-                      size="small"
+                    <CardContent
                       sx={{
-                        borderColor: '#fff',
-                        color: '#fff',
-                        mb: 1,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        textAlign: 'center',
+                        flexGrow: 1,
                       }}
-                    />
-                    <Divider sx={{ my: 1, borderColor: '#333', width: '80%' }} />
-                    <Typography variant="caption" color="gray">
-                      Category: {item.category}
-                    </Typography>
-                  </CardContent>
-                  <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
-                    <Button
-                      variant="outlined"
-                      sx={{
-                        color: '#fff',
-                        borderColor: '#fff',
-                        '&:hover': {
-                          backgroundColor: '#fff',
-                          color: '#000',
-                        },
-                        borderRadius: 2,
-                        textTransform: 'none',
-                      }}
-                      endIcon={<RestaurantMenuIcon />}
                     >
-                      Add to Cart
-                    </Button>
-                  </CardActions>
-                </Card>
+                      <Typography variant="h6" gutterBottom>
+                        {item.fname}
+                      </Typography>
+                      <Typography variant="body2" sx={{ mb: 1, color: '#ccc' }}>
+                        ₹{item.cost}
+                      </Typography>
+                      <Chip
+                        label={item.veg ? 'Veg' : 'Non-Veg'}
+                        variant="outlined"
+                        size="small"
+                        sx={{
+                          borderColor: '#fff',
+                          color: '#fff',
+                          mb: 1,
+                        }}
+                      />
+                      <Divider sx={{ my: 1, borderColor: '#333', width: '80%' }} />
+                      <Typography variant="caption" color="gray">
+                        Category: {item.category}
+                      </Typography>
+                    </CardContent>
+                    <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
+                      <Button
+                        variant="outlined"
+                        sx={{
+                          color: '#fff',
+                          borderColor: '#fff',
+                          '&:hover': {
+                            backgroundColor: '#fff',
+                            color: '#000',
+                          },
+                          borderRadius: 2,
+                          textTransform: 'none',
+                        }}
+                        endIcon={<RestaurantMenuIcon />}
+                      >
+                        Add to Cart
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </motion.div>
               ))
             ) : (
               <Typography
