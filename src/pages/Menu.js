@@ -46,7 +46,7 @@ export default function Menu() {
   useEffect(() => {
     // Fetch food items
     axios
-      .get('/fooditems')
+      .get('http://localhost:5000/fooditems')
       .then((res) => {
         setItems(res.data);
         setLoading(false);
@@ -61,7 +61,7 @@ export default function Menu() {
     // Fetch user's cart if logged in
     if (token) {
       axios
-        .get('/users/cart', {
+        .get('http://localhost:5000/users/cart', {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
@@ -93,7 +93,7 @@ export default function Menu() {
       const newQuantity = (currentItem ? currentItem.quantity : 0) + 1;
 
       const response = await axios.post(
-        '/users/cart/add',
+        'http://localhost:5000/users/cart/add',
         { fid, quantity: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -129,7 +129,7 @@ export default function Menu() {
       const newQuantity = currentItem.quantity - 1;
 
       const response = await axios.post(
-        '/users/cart/remove',
+        'http://localhost:5000/users/cart/remove',
         { fid, quantity: newQuantity > 0 ? newQuantity : 0 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
