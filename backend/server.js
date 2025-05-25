@@ -6,7 +6,7 @@ require('dotenv').config({ path: './backend/.env' });
 const FoodItem = require('./models/FoodItem'); // import model
 
 const app = express();
-
+const userRoutes = require('./routes/user'); // ✅ Import the user route
 // Middleware
 app.use(cors());
 app.use(express.json());
@@ -33,7 +33,7 @@ app.get('/fooditems', async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err });
   }
 });
-
+app.use('/users', userRoutes); // ✅ Mount the user route at /users
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
