@@ -20,7 +20,8 @@
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
-    "framer-motion": "^12.12.2",
+    "formik": "^2.4.6",
+    "framer-motion": "^12.14.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.15.0",
     "react": "^19.1.0",
@@ -29,7 +30,8 @@
     "react-phone-number-input": "^3.4.12",
     "react-router-dom": "^7.6.0",
     "react-scripts": "5.0.1",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "yup": "^1.6.1"
   },
   "scripts": {
     "start": "react-scripts start",
@@ -59,7 +61,6 @@
   },
   "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",
   "main": "index.js",
-  "devDependencies": {},
   "author": "",
   "license": "ISC"
 }
