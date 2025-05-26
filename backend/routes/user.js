@@ -153,31 +153,50 @@ router.post('/cart/add', authenticateToken, async (req, res) => {
 router.post('/cart/remove', authenticateToken, async (req, res) => {
   try {
     const { fid } = req.body;
+    
+    // Validate fid type
     if (typeof fid !== 'number') {
-      return res.status(400).json({ message: 'fid must be a number' });
+      return res.status(400).json({ error: 'Invalid food item ID format' });
     }
 
     const user = req.user;
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ error: 'User not found' });
 
     const itemIndex = user.cart.findIndex(item => item.fid === fid);
     if (itemIndex === -1) {
-      return res.status(400).json({ message: 'Item not found in cart' });
+      return res.status(404).json({ error: 'Item not found in cart' });
     }
 
+    // Validate quantity
+    if (user.cart[itemIndex].quantity < 1) {
+      return res.status(400).json({ error: 'Invalid item quantity' });
+    }
+
+    // Atomic operation
     if (user.cart[itemIndex].quantity > 1) {
       user.cart[itemIndex].quantity -= 1;
     } else {
       user.cart.splice(itemIndex, 1);
     }
 
+    // Explicit schema validation
+    await user.validate();
     await user.save();
-    res.json({ message: 'Item removed or decremented', cart: user.cart });
+    
+    return res.json({
+      success: true,
+      message: 'Cart updated successfully',
+      cart: user.cart
+    });
+
   } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
+    console.error('Cart update error:', err);
+    return res.status(500).json({ 
+      error: 'Server error',
+      details: err.message
+    });
   }
 });
-
 // --- Clear entire cart ---
 router.post('/cart/clear', authenticateToken, async (req, res) => {
   try {
