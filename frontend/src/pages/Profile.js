@@ -5,7 +5,7 @@ import {
   Button, TextField
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 export default function Profile() {
   const [user, setUser] = useState(null);
   const [editedUser, setEditedUser] = useState({});
