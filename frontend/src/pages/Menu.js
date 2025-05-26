@@ -20,7 +20,9 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+
 const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 const cardVariants = {
   hidden: { opacity: 0, y: 20 },
   visible: (i) => ({
@@ -38,13 +40,11 @@ export default function Menu() {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [cart, setCart] = useState([]); // [{ fid, quantity }]
+  const [cart, setCart] = useState([]);
   const navigate = useNavigate();
-
   const token = localStorage.getItem('token');
 
   useEffect(() => {
-    // Fetch food items
     axios
       .get(`${API_BASE_URL}/fooditems`)
       .then((res) => {
@@ -58,10 +58,9 @@ export default function Menu() {
   }, []);
 
   useEffect(() => {
-    // Fetch user's cart if logged in
     if (token) {
       axios
-        .get(`${process.env.REACT_APP_API_URL}/users/cart`, {
+        .get(`${API_BASE_URL}/users/cart`, {
           headers: { Authorization: `Bearer ${token}` },
         })
         .then((res) => {
@@ -69,74 +68,56 @@ export default function Menu() {
         })
         .catch((err) => {
           console.error('Failed to fetch cart:', err);
-          setCart([]); // reset cart on error
+          setCart([]);
         });
     } else {
       setCart([]);
     }
   }, [token]);
 
-  const getQuantity = (fid) => {
-    const item = cart.find((c) => c.fid === fid);
-    return item ? item.quantity : 0;
-  };
+  const getQuantity = (fid) => cart.find((c) => c.fid === fid)?.quantity || 0;
 
-  // Add to cart or increase quantity
   const addToCart = async (fid) => {
-    if (!token) {
-      navigate('/signin');
-      return;
-    }
+    if (!token) return navigate('/signin');
+    const currentItem = cart.find((item) => item.fid === fid);
+    const newQuantity = (currentItem?.quantity || 0) + 1;
 
     try {
-      const currentItem = cart.find((item) => item.fid === fid);
-      const newQuantity = (currentItem ? currentItem.quantity : 0) + 1;
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/users/cart/add`,
+      const res = await axios.post(
+        `${API_BASE_URL}/users/cart/add`,
         { fid, quantity: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (response.status === 200) {
-        setCart((prevCart) => {
-          if (currentItem) {
-            return prevCart.map((item) =>
+      if (res.status === 200) {
+        if (currentItem) {
+          setCart((prev) =>
+            prev.map((item) =>
               item.fid === fid ? { ...item, quantity: newQuantity } : item
-            );
-          } else {
-            return [...prevCart, { fid, quantity: newQuantity }];
-          }
-        });
+            )
+          );
+        } else {
+          setCart((prev) => [...prev, { fid, quantity: newQuantity }]);
+        }
       }
-    } catch (error) {
-      console.error('Error adding to cart:', error);
+    } catch (err) {
+      console.error('Error adding to cart:', err);
     }
   };
 
-  // Decrease quantity or remove item
   const removeFromCart = async (fid) => {
-    if (!token) {
-      navigate('/signin');
-      return;
-    }
+    if (!token) return navigate('/signin');
+    const currentItem = cart.find((item) => item.fid === fid);
+    if (!currentItem) return;
+    const newQuantity = currentItem.quantity - 1;
 
     try {
-      // Decrease quantity by 1 or remove if quantity reaches 0
-      const currentItem = cart.find((item) => item.fid === fid);
-      if (!currentItem) return; // no item to remove
-
-      const newQuantity = currentItem.quantity - 1;
-
-      const response = await axios.post(
-        `${process.env.REACT_APP_API_URL}/users/cart/remove`,
+      const res = await axios.post(
+        `${API_BASE_URL}/users/cart/remove`,
         { fid, quantity: newQuantity > 0 ? newQuantity : 0 },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-
-      if (response.status === 200) {
-        // API returns updated cart
-        setCart(response.data.cart || []);
+      if (res.status === 200) {
+        setCart(res.data.cart || []);
       }
     } catch (err) {
       console.error('Error removing from cart:', err);
@@ -147,24 +128,26 @@ export default function Menu() {
     item.fname.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const totalItemsInCart = cart.reduce((sum, item) => sum + item.quantity, 0);
+
   return (
     <Box
       sx={{
         position: 'relative',
-        px: 4,
-        py: 6,
+        px: 2,
+        pt: 4,
+        pb: 10, // padding-bottom for checkout button
         minHeight: '100vh',
         color: '#fff',
-        overflow: 'hidden',
         backgroundImage:
           "url('https://images.unsplash.com/photo-1553025934-296397db4010?q=80&w=2674&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundAttachment: 'fixed',
+        overflow: 'hidden',
       }}
     >
-      {/* Overlay */}
       <Box
         sx={{
           position: 'absolute',
@@ -174,13 +157,11 @@ export default function Menu() {
         }}
       />
 
-      {/* Content */}
       <Box sx={{ position: 'relative', zIndex: 1 }}>
         <Typography variant="h4" align="center" sx={{ mb: 4, fontWeight: 700 }}>
           Explore our Menu
         </Typography>
 
-        {/* Search Bar */}
         <Box sx={{ maxWidth: 400, mx: 'auto', mb: 4 }}>
           <TextField
             fullWidth
@@ -202,8 +183,6 @@ export default function Menu() {
                 '& .MuiInputBase-input': {
                   color: '#fff',
                   fontWeight: 500,
-                  paddingTop: '6px',
-                  paddingBottom: '6px',
                   fontSize: '0.875rem',
                 },
                 '&:hover': {
@@ -226,23 +205,13 @@ export default function Menu() {
             sx={{
               display: 'grid',
               gridTemplateColumns: {
-                xs: 'repeat(2, 1fr)',
-                sm: 'repeat(3, 1fr)',
-                md: 'repeat(5, 1fr)',
+                xs: 'repeat(auto-fill, minmax(90vw, 1fr))',
+                sm: 'repeat(auto-fill, minmax(200px, 1fr))',
               },
-              gap: 3,
-              overflowX: {
-                xs: 'auto',
-                md: 'visible',
-              },
+              gap: 2,
+              scrollSnapType: { xs: 'x mandatory' },
+              overflowX: { xs: 'auto', sm: 'visible' },
               pb: 2,
-              '&::-webkit-scrollbar': {
-                height: '6px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                backgroundColor: '#444',
-                borderRadius: '3px',
-              },
             }}
           >
             {filteredItems.length > 0 ? (
@@ -251,7 +220,7 @@ export default function Menu() {
 
                 return (
                   <motion.div
-                    key={item.fid || item._id}
+                    key={item.fid}
                     custom={index}
                     initial="hidden"
                     animate="visible"
@@ -267,8 +236,6 @@ export default function Menu() {
                         flexDirection: 'column',
                         justifyContent: 'space-between',
                         minHeight: 240,
-                        width: '100%',
-                        flexShrink: 0,
                         scrollSnapAlign: 'start',
                       }}
                     >
@@ -277,14 +244,11 @@ export default function Menu() {
                           display: 'flex',
                           flexDirection: 'column',
                           alignItems: 'center',
-                          justifyContent: 'center',
                           textAlign: 'center',
                           flexGrow: 1,
                         }}
                       >
-                        <Typography variant="h6" gutterBottom>
-                          {item.fname}
-                        </Typography>
+                        <Typography variant="h6">{item.fname}</Typography>
                         <Typography variant="body2" sx={{ mb: 1, color: '#ccc' }}>
                           ₹{item.cost}
                         </Typography>
@@ -292,11 +256,7 @@ export default function Menu() {
                           label={item.veg ? 'Veg' : 'Non-Veg'}
                           variant="outlined"
                           size="small"
-                          sx={{
-                            borderColor: '#fff',
-                            color: '#fff',
-                            mb: 1,
-                          }}
+                          sx={{ borderColor: '#fff', color: '#fff', mb: 1 }}
                         />
                         <Divider sx={{ my: 1, borderColor: '#333', width: '80%' }} />
                         <Typography variant="caption" color="gray">
@@ -310,10 +270,7 @@ export default function Menu() {
                             sx={{
                               color: '#fff',
                               borderColor: '#fff',
-                              '&:hover': {
-                                backgroundColor: '#fff',
-                                color: '#000',
-                              },
+                              '&:hover': { backgroundColor: '#fff', color: '#000' },
                               borderRadius: 2,
                               textTransform: 'none',
                             }}
@@ -323,13 +280,7 @@ export default function Menu() {
                             Add to Cart
                           </Button>
                         ) : (
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 1,
-                            }}
-                          >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                             <IconButton
                               size="small"
                               sx={{ color: '#fff', border: '1px solid #fff' }}
@@ -337,11 +288,7 @@ export default function Menu() {
                             >
                               <RemoveIcon />
                             </IconButton>
-
-                            <Typography sx={{ minWidth: 24, textAlign: 'center' }}>
-                              {quantity}
-                            </Typography>
-
+                            <Typography>{quantity}</Typography>
                             <IconButton
                               size="small"
                               sx={{ color: '#fff', border: '1px solid #fff' }}
@@ -368,6 +315,37 @@ export default function Menu() {
           </Box>
         )}
       </Box>
+
+      {/* Checkout Button */}
+      {token && totalItemsInCart > 0 && (
+        <Box
+          sx={{
+            position: 'fixed',
+            bottom: 16,
+            left: 0,
+            width: '100%',
+            display: 'flex',
+            justifyContent: 'center',
+            zIndex: 999,
+            px: 2,
+          }}
+        >
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => navigate('/checkout')}
+            sx={{
+              width: '100%',
+              maxWidth: 480,
+              borderRadius: 3,
+              fontWeight: 'bold',
+              py: 1.5,
+            }}
+          >
+            Proceed to Checkout ({totalItemsInCart})
+          </Button>
+        </Box>
+      )}
     </Box>
   );
 }
