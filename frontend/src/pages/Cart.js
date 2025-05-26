@@ -131,14 +131,21 @@ export default function Cart() {
   const deleteItem = async (fid) => {
     try {
       setIsProcessing(true);
-      const response = await axios.post('/users/cart/deleteitem', { fid });
-      if (response.status === 200) {
-        // Update the cart state here
-        setCartItems((prev) => prev.filter(item => item.fid !== fid));
+      // Ensure path matches exactly with backend route
+      const response = await axios.post(
+        '/users/cart/deleteitem', // Must match backend route
+        { fid },
+        { validateStatus: (status) => status < 500 } // Handle 4xx errors
+      );
+
+      if (response.data.success) {
+        setCartItems(response.data.cart);
+      } else {
+        setError(response.data.error || 'Failed to delete item');
       }
     } catch (error) {
-      console.error(error);
-      setError('Failed to delete item from cart');
+      console.error('Network error:', error);
+      setError('Cannot connect to server');
     } finally {
       setIsProcessing(false);
     }

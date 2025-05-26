@@ -145,7 +145,40 @@ router.post('/cart/add', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
+// Add this route ABOVE the /cart/remove route
+router.post('/cart/deleteitem', authenticateToken, async (req, res) => {
+  try {
+    const { fid } = req.body;
 
+    // Validate fid type
+    if (typeof fid !== 'number' || fid <= 0) {
+      return res.status(400).json({ error: 'Invalid food item ID' });
+    }
+
+    const user = req.user;
+    if (!user) return res.status(404).json({ error: 'User not found' });
+
+    // Atomic removal
+    const result = await User.updateOne(
+      { _id: user._id },
+      { $pull: { cart: { fid: fid } } }
+    );
+
+    if (result.modifiedCount === 0) {
+      return res.status(404).json({ error: 'Item not found in cart' });
+    }
+
+    const updatedUser = await User.findById(user._id);
+    res.status(200).json({
+      success: true,
+      cart: updatedUser.cart
+    });
+
+  } catch (err) {
+    console.error('Delete item error:', err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
 
 
 // --- Remove/decrement item from cart ---
@@ -275,45 +308,5 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
   }
 });
 
-// --- Completely delete item from cart ---
-// Accepts { fid: Number }
-router.post('/cart/deleteitem', authenticateToken, async (req, res) => {
-  try {
-    const { fid } = req.body;
 
-    // 1. Validate fid type (matches cartItemSchema)
-    if (typeof fid !== 'number' || fid <= 0) {
-      return res.status(400).json({ error: 'Invalid food item ID' });
-    }
-
-    const user = req.user;
-    if (!user) return res.status(404).json({ error: 'User not found' });
-
-    // 2. Atomic removal using MongoDB operator
-    const result = await User.updateOne(
-      { _id: user._id },
-      { $pull: { cart: { fid: fid } } }
-    );
-
-    // 3. Check if item was actually removed
-    if (result.modifiedCount === 0) {
-      return res.status(404).json({ error: 'Item not found in cart' });
-    }
-
-    // 4. Return updated cart state
-    const updatedUser = await User.findById(user._id);
-    return res.status(200).json({
-      success: true,
-      message: 'Item removed from cart',
-      cart: updatedUser.cart
-    });
-
-  } catch (err) {
-    console.error('Cart deletion error:', err);
-    return res.status(500).json({ 
-      error: 'Server error',
-      details: err.message
-    });
-  }
-});
 module.exports = router;
