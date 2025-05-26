@@ -333,7 +333,7 @@ export default function Menu() {
           <Button
             variant="contained"
             color="primary"
-            onClick={() => navigate('/checkout')}
+            onClick={() => navigate('/cart')}
             sx={{
               width: '100%',
               maxWidth: 480,
