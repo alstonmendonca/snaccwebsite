@@ -1,5 +1,4 @@
-// Navbar.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { NavLink } from "react-router-dom";
 import {
@@ -21,8 +20,18 @@ import {
 } from "@mui/material";
 import MenuIcon from "@mui/icons-material/Menu";
 import ArrowDropDownIcon from "@mui/icons-material/ArrowDropDown";
+import { useAuth } from "../context/AuthContext";
 
-import { useAuth } from "../context/AuthContext"; // import your hook
+// Throttle scroll handler
+function throttle(fn, wait) {
+  let lastCall = 0;
+  return function(...args) {
+    const now = Date.now();
+    if (now - lastCall < wait) return;
+    lastCall = now;
+    return fn(...args);
+  };
+}
 
 const focusVisible = {
   outline: "2px solid #fff",
@@ -66,6 +75,8 @@ const DrawerNavItem = styled(ListItemButton)(({ theme }) => ({
   borderRadius: theme.shape.borderRadius,
   textTransform: "capitalize",
   fontFamily: "'Inter', sans-serif",
+  minHeight: 48,
+  alignItems: "center",
   "&.active, &:hover": {
     color: theme.palette.primary.main,
     backgroundColor: alpha(theme.palette.primary.main, 0.1),
@@ -74,33 +85,30 @@ const DrawerNavItem = styled(ListItemButton)(({ theme }) => ({
 }));
 
 function Navbar() {
-  const { isLoggedIn, logout, user } = useAuth(); // get login state, logout fn, and user (should have email)
+  const { isLoggedIn, logout, user } = useAuth();
   const [scrolled, setScrolled] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const isMobile = useMediaQuery("(max-width:900px)");
   const navigate = useNavigate();
 
-  // Dropdown state & handlers for USER menu
   const [anchorEl, setAnchorEl] = useState(null);
+  // eslint-disable-next-line
   const open = Boolean(anchorEl);
 
-  const handleMenuOpen = (event) => {
-    setAnchorEl(event.currentTarget);
-  };
-
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-  };
-
-  const handleNavigate = (path) => {
-    navigate(path);
-    handleMenuClose();
-  };
+  const navLinks = useMemo(() => [
+    { to: "/", label: "Home" },
+    { to: "/menu", label: "Menu" },
+    ...(isLoggedIn ? [{ to: "/cart", label: "View Cart" }] : []),
+    { to: "/about", label: "About" },
+  ], [isLoggedIn]);
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 50);
-    window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    const handleScroll = throttle(() => {
+      setScrolled(window.scrollY > 50);
+    }, 100);
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const handleLogout = () => {
@@ -108,136 +116,53 @@ function Navbar() {
     navigate("/signin");
   };
 
-  const navLinks = [
-    { to: "/", label: "Home" },
-    { to: "/menu", label: "Menu" },
-  ...(isLoggedIn ? [{ to: "/cart", label: "View Cart" }] : []),
-    { to: "/about", label: "About" },
-  ];
-
   const toggleDrawer = (open) => () => setDrawerOpen(open);
 
-  // When logged in, show email + dropdown and logout button
-  const AuthButtons = isLoggedIn ? (
-    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-      {/* User email dropdown button */}
-      <Button
-        id="user-button"
-        aria-controls={open ? "user-menu" : undefined}
-        aria-haspopup="true"
-        aria-expanded={open ? "true" : undefined}
-        onClick={handleMenuOpen}
-        variant="text" // no border
-        sx={{
-          color: "text.primary",
-          textTransform: "none",
-          fontWeight: 600,
-          px: 1,
-          gap: 0.5,
-          "&:hover": {
-            backgroundColor: alpha("#fff", 0.1),
-          },
-          "&:focus-visible": focusVisible,
-        }}
-        endIcon={<ArrowDropDownIcon />}
-      >
-        {user?.email || "User"}
-      </Button>
-
-      <Menu
-        id="user-menu"
-        anchorEl={anchorEl}
-        open={open}
-        onClose={handleMenuClose}
-        MenuListProps={{
-          "aria-labelledby": "user-button",
-          sx: {
-            bgcolor: "#000",
-            color: "#fff",
-            borderRadius: 1,
-            minWidth: 160,
-            boxShadow:
-              "0 4px 8px rgba(255, 255, 255, 0.15), 0 6px 20px rgba(255, 255, 255, 0.1)",
-          },
-        }}
-        PaperProps={{
-          sx: {
-            bgcolor: "#000",
-            border: "1px solid #fff",
-          },
-        }}
-      >
-        <MenuItem
-          onClick={() => handleNavigate("/profile")}
-          sx={{ "&:hover": { backgroundColor: alpha("#fff", 0.15) } }}
-        >
-          View Profile
-        </MenuItem>
-        <MenuItem
-          onClick={() => handleNavigate("/orders")}
-          sx={{ "&:hover": { backgroundColor: alpha("#fff", 0.15) } }}
-        >
-          View Orders
-        </MenuItem>
-      </Menu>
-
-      {/* Logout button */}
-      <Button
-        onClick={handleLogout}
-        variant="outlined"
-        sx={{
-          borderColor: "rgba(255,255,255,0.3)",
-          color: "text.primary",
-          px: 4,
-          "&:hover": {
-            borderColor: "primary.main",
-            backgroundColor: alpha("#fff", 0.1),
-          },
-          "&:focus-visible": focusVisible,
-        }}
-      >
-        Log Out
-      </Button>
+  const MobileAuthMenu = () => (
+    <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 3 }}>
+      {isLoggedIn ? (
+        <>
+          <DrawerNavItem
+            component={Link}
+            to="/profile"
+            onClick={toggleDrawer(false)}
+          >
+            <ListItemText primary="View Profile" />
+          </DrawerNavItem>
+          <DrawerNavItem
+            component={Link}
+            to="/orders"
+            onClick={toggleDrawer(false)}
+          >
+            <ListItemText primary="View Orders" />
+          </DrawerNavItem>
+          <Button variant="outlined" fullWidth onClick={handleLogout}>
+            Log Out
+          </Button>
+        </>
+      ) : (
+        <>
+          <Button
+            component={Link}
+            to="/signin"
+            variant="outlined"
+            fullWidth
+            onClick={toggleDrawer(false)}
+          >
+            Sign In
+          </Button>
+          <Button
+            component={Link}
+            to="/signup"
+            variant="contained"
+            fullWidth
+            onClick={toggleDrawer(false)}
+          >
+            Sign Up
+          </Button>
+        </>
+      )}
     </Box>
-  ) : (
-    <>
-      <Button
-        component={Link}
-        to="/signin"
-        variant="outlined"
-        sx={{
-          border: "1px solid rgba(255, 255, 255, 0.3)",
-          color: "text.primary",
-          px: 4,
-          "&:hover": {
-            borderColor: "primary.main",
-            backgroundColor: alpha("#fff", 0.1),
-            transform: "translateY(-2px)",
-          },
-          "&:focus-visible": focusVisible,
-        }}
-      >
-        Sign In
-      </Button>
-      <Button
-        component={Link}
-        to="/signup"
-        variant="contained"
-        sx={{
-          backgroundColor: "#fff",
-          color: "#000",
-          px: 4,
-          "&:hover": {
-            backgroundColor: "#e0e0e0",
-            transform: "translateY(-2px)",
-            boxShadow: "0 4px 12px rgba(255, 255, 255, 0.4)",
-          },
-          "&:focus-visible": focusVisible,
-        }}
-      >
-        Sign Up
-      </Button>
-    </>
   );
 
   return (
@@ -245,9 +170,9 @@ function Navbar() {
       position="sticky"
       elevation={scrolled ? 4 : 0}
       sx={{
-        backgroundColor: scrolled ? alpha("#000", 0.85) : "transparent",
-        backdropFilter: scrolled ? "blur(8px)" : "none",
-        transition: "background-color 0.3s ease",
+        backgroundColor: scrolled ? alpha("#000", 0.95) : "transparent",
+        backdropFilter: scrolled ? `blur(${isMobile ? 4 : 8}px)` : "none",
+        transition: "background-color 0.3s ease, backdrop-filter 0.3s ease",
       }}
       component="nav"
     >
@@ -279,24 +204,25 @@ function Navbar() {
           LASSI CORNER
         </Typography>
 
-        {!isMobile && (
-          <Box
-            sx={{
-              display: "flex",
-              gap: 5,
-              flexGrow: 1,
-              justifyContent: "center",
-            }}
-          >
-            {navLinks.map(({ to, label }) => (
-              <StyledNavLink key={to} to={to} end>
-                {label}
-              </StyledNavLink>
-            ))}
-          </Box>
-        )}
-
-        {isMobile ? (
+        {!isMobile ? (
+          <>
+            <Box sx={{ display: "flex", gap: 5, flexGrow: 1, justifyContent: "center" }}>
+              {navLinks.map(({ to, label }) => (
+                <StyledNavLink key={to} to={to} end>
+                  {label}
+                </StyledNavLink>
+              ))}
+            </Box>
+            <DesktopAuthMenu 
+              isLoggedIn={isLoggedIn}
+              user={user}
+              handleLogout={handleLogout}
+              handleMenuOpen={() => setAnchorEl}
+              handleMenuClose={() => setAnchorEl(null)}
+              handleNavigate={navigate}
+            />
+          </>
+        ) : (
           <>
             <IconButton
               color="inherit"
@@ -306,14 +232,17 @@ function Navbar() {
             >
               <MenuIcon />
             </IconButton>
-
             <Drawer
               anchor="right"
               open={drawerOpen}
               onClose={toggleDrawer(false)}
-              ModalProps={{ keepMounted: true }}
+              ModalProps={{ keepMounted: false }}
               PaperProps={{
-                sx: { backgroundColor: "background.paper", width: 260, p: 2 },
+                sx: {
+                  backgroundColor: "background.paper",
+                  width: 260,
+                  p: 2,
+                },
               }}
             >
               <List sx={{ flexGrow: 1 }}>
@@ -329,42 +258,140 @@ function Navbar() {
                   </DrawerNavItem>
                 ))}
               </List>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1, mt: 3 }}>
-                {isLoggedIn ? (
-                  <Button variant="outlined" fullWidth onClick={handleLogout}>
-                    Log Out
-                  </Button>
-                ) : (
-                  <>
-                    <Button
-                      component={Link}
-                      to="/signin"
-                      variant="outlined"
-                      fullWidth
-                      onClick={toggleDrawer(false)}
-                    >
-                      Sign In
-                    </Button>
-                    <Button
-                      component={Link}
-                      to="/signup"
-                      variant="contained"
-                      fullWidth
-                      onClick={toggleDrawer(false)}
-                    >
-                      Sign Up
-                    </Button>
-                  </>
-                )}
-              </Box>
+              <MobileAuthMenu />
             </Drawer>
           </>
-        ) : (
-          <Box sx={{ display: "flex", gap: 2 }}>{AuthButtons}</Box>
         )}
       </Toolbar>
     </AppBar>
   );
 }
+
+const DesktopAuthMenu = React.memo(({ 
+  isLoggedIn, 
+  user, 
+  handleLogout, 
+  handleMenuOpen, 
+  handleMenuClose, 
+  handleNavigate 
+}) => {
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+
+  return isLoggedIn ? (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+      <Button
+        id="user-button"
+        aria-controls={open ? "user-menu" : undefined}
+        aria-haspopup="true"
+        aria-expanded={open ? "true" : undefined}
+        onClick={(e) => setAnchorEl(e.currentTarget)}
+        variant="text"
+        sx={{
+          color: "text.primary",
+          textTransform: "none",
+          fontWeight: 600,
+          px: 1,
+          gap: 0.5,
+          "&:hover": { backgroundColor: alpha("#fff", 0.1) },
+          "&:focus-visible": focusVisible,
+        }}
+        endIcon={<ArrowDropDownIcon />}
+      >
+        {user?.email || "User"}
+      </Button>
+
+      <Menu
+        id="user-menu"
+        anchorEl={anchorEl}
+        open={open}
+        onClose={() => setAnchorEl(null)}
+        MenuListProps={{
+          "aria-labelledby": "user-button",
+          sx: {
+            bgcolor: "#000",
+            color: "#fff",
+            borderRadius: 1,
+            minWidth: 160,
+            boxShadow: "0 4px 8px rgba(255, 255, 255, 0.15)",
+          },
+        }}
+        PaperProps={{
+          sx: {
+            bgcolor: "#000",
+            border: "1px solid #fff",
+          },
+        }}
+      >
+        <MenuItem
+          onClick={() => handleNavigate("/profile")}
+          sx={{ "&:hover": { backgroundColor: alpha("#fff", 0.15) } }}
+        >
+          View Profile
+        </MenuItem>
+        <MenuItem
+          onClick={() => handleNavigate("/orders")}
+          sx={{ "&:hover": { backgroundColor: alpha("#fff", 0.15) } }}
+        >
+          View Orders
+        </MenuItem>
+      </Menu>
+
+      <Button
+        onClick={handleLogout}
+        variant="outlined"
+        sx={{
+          borderColor: "rgba(255,255,255,0.3)",
+          color: "text.primary",
+          px: 4,
+          "&:hover": {
+            borderColor: "primary.main",
+            backgroundColor: alpha("#fff", 0.1),
+          },
+          "&:focus-visible": focusVisible,
+        }}
+      >
+        Log Out
+      </Button>
+    </Box>
+  ) : (
+    <Box sx={{ display: "flex", gap: 2 }}>
+      <Button
+        component={Link}
+        to="/signin"
+        variant="outlined"
+        sx={{
+          border: "1px solid rgba(255, 255, 255, 0.3)",
+          color: "text.primary",
+          px: 4,
+          "&:hover": {
+            borderColor: "primary.main",
+            backgroundColor: alpha("#fff", 0.1),
+          },
+          "&:focus-visible": focusVisible,
+        }}
+      >
+        Sign In
+      </Button>
+      <Button
+        component={Link}
+        to="/signup"
+        variant="contained"
+        sx={{
+          backgroundColor: "#fff",
+          color: "#000",
+          px: 4,
+          "&:hover": {
+            backgroundColor: "#e0e0e0",
+            boxShadow: "0 4px 12px rgba(255, 255, 255, 0.4)",
+          },
+          "&:focus-visible": focusVisible,
+        }}
+      >
+        Sign Up
+      </Button>
+    </Box>
+  );
+});
 
 export default Navbar;

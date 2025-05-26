@@ -1,12 +1,19 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import {
-  Box, Typography, List, ListItem, Divider, CircularProgress,
-  Button, TextField
+  Box, Typography, Divider, CircularProgress,
+  Button, TextField, Grid, useTheme,
+  Snackbar, Alert, Chip, Stack
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import CancelIcon from '@mui/icons-material/Cancel';
+import EventNoteIcon from '@mui/icons-material/EventNote';
+import LocalShippingIcon from '@mui/icons-material/LocalShipping';
 
 export default function Profile() {
+  const theme = useTheme();
   const [user, setUser] = useState(null);
   const [editedUser, setEditedUser] = useState({});
   const [loading, setLoading] = useState(true);
@@ -14,38 +21,36 @@ export default function Profile() {
   const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
+  const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('token');
     if (!token) {
       navigate('/signin');
       return;
     }
 
-    const fetchProfile = async () => {
-      try {
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/profile`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setUser(res.data);
-        setEditedUser(res.data);
-      } catch (err) {
-        setError('Failed to load profile');
-        if (err.response?.status === 401) {
-          navigate('/signin');
-        }
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchProfile();
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/profile`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUser(res.data);
+      setEditedUser(res.data);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Failed to load profile');
+      if (err.response?.status === 401) navigate('/signin');
+    } finally {
+      setLoading(false);
+    }
   }, [navigate]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const handleChange = (e) => {
     setEditedUser(prev => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
-  const handleSave = async () => {
+  const handleSave = useCallback(async () => {
     const token = localStorage.getItem('token');
     try {
       const { name, mobile, dob, address } = editedUser;
@@ -58,145 +63,214 @@ export default function Profile() {
       setEditedUser(res.data);
       setEditMode(false);
     } catch (err) {
-      console.error(err);
-      alert('Update failed');
+      setError(err.response?.data?.message || 'Update failed');
     }
-  };
+  }, [editedUser]);
+
+  const UserField = ({ label, value, name, type = 'text', editComponent }) => (
+    <Grid container spacing={2} sx={{ py: 2 }}>
+      <Grid item xs={12} md={3}>
+        <Typography variant="subtitle1" fontWeight="500">
+          {label}
+        </Typography>
+      </Grid>
+      <Grid item xs={12} md={9}>
+        {editMode ? (
+          editComponent || (
+            <TextField
+              fullWidth
+              variant="outlined"
+              size="small"
+              name={name}
+              type={type}
+              value={editedUser[name] || ''}
+              onChange={handleChange}
+              InputProps={{
+                sx: { backgroundColor: theme.palette.background.paper }
+              }}
+            />
+          )
+        ) : (
+          <Typography variant="body1">
+            {value || 'Not provided'}
+          </Typography>
+        )}
+      </Grid>
+    </Grid>
+  );
 
   if (loading) {
     return (
-      <Box sx={{ textAlign: 'center', mt: 8 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}>
         <CircularProgress />
       </Box>
     );
   }
 
-  if (error) {
-    return (
-      <Box sx={{ textAlign: 'center', mt: 8, color: 'red' }}>
-        <Typography>{error}</Typography>
-      </Box>
-    );
-  }
-
   return (
-    <Box sx={{ maxWidth: 600, mx: 'auto', mt: 5, p: 4, backgroundColor: '#111', borderRadius: 3, color: '#fff' }}>
-      <Typography variant="h4" sx={{ mb: 3, fontWeight: 'bold' }}>
-        Profile
-      </Typography>
-      <List>
-        <ListItem>
-          <strong>Name: </strong>&nbsp;
-          {editMode ? (
-            <TextField
-              variant="standard"
-              name="name"
-              value={editedUser.name || ''}
-              onChange={handleChange}
-              fullWidth
-              sx={{ input: { color: '#fff' } }}
-            />
-          ) : user.name}
-        </ListItem>
-        <Divider sx={{ backgroundColor: '#444' }} />
-        <ListItem>
-          <strong>Email: </strong>&nbsp;{user.email}
-        </ListItem>
-        <Divider sx={{ backgroundColor: '#444' }} />
-        <ListItem>
-          <strong>Mobile: </strong>&nbsp;
-          {editMode ? (
-            <TextField
-              variant="standard"
-              name="mobile"
-              value={editedUser.mobile || ''}
-              onChange={handleChange}
-              fullWidth
-              sx={{ input: { color: '#fff' } }}
-            />
-          ) : user.mobile}
-        </ListItem>
-        <Divider sx={{ backgroundColor: '#444' }} />
-        <ListItem>
-          <strong>Date of Birth: </strong>&nbsp;
-          {editMode ? (
-            <TextField
-              variant="standard"
-              name="dob"
-              type="date"
-              value={editedUser.dob ? editedUser.dob.slice(0, 10) : ''}
-              onChange={handleChange}
-              fullWidth
-              sx={{ input: { color: '#fff' } }}
-            />
-          ) : user.dob ? new Date(user.dob).toDateString() : 'Not provided'}
-        </ListItem>
-        <Divider sx={{ backgroundColor: '#444' }} />
-        <ListItem>
-          <strong>Address: </strong>&nbsp;
-          {editMode ? (
-            <TextField
-              variant="standard"
-              name="address"
-              value={editedUser.address || ''}
-              onChange={handleChange}
-              fullWidth
-              sx={{ input: { color: '#fff' } }}
-            />
-          ) : user.address || 'Not provided'}
-        </ListItem>
-        <Divider sx={{ backgroundColor: '#444' }} />
-        <ListItem>
-          <Box>
-            <strong>Orders:</strong>
-            {user.orders && user.orders.length > 0 ? (
-              <List dense>
-                {user.orders.map((order, index) => (
-                  <ListItem key={index} sx={{ ml: 2 }}>
-                    Order #{order.order_id} — {order.order_items?.length || 0} item(s) —{' '}
-                    {order.completed ? '✅ Completed' : '⌛ Pending'}
-                  </ListItem>
-                ))}
-              </List>
-            ) : (
-              <Typography sx={{ ml: 2, mt: 1 }}>No orders yet</Typography>
-            )}
-          </Box>
-        </ListItem>
-      </List>
-
-      <Box sx={{ mt: 4 }}>
-        {editMode ? (
-          <>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleSave}
-              sx={{ mr: 2 }}
-            >
-              Save
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setEditedUser(user);
-                setEditMode(false);
-              }}
-              sx={{ color: '#fff', borderColor: '#fff' }}
-            >
-              Cancel
-            </Button>
-          </>
-        ) : (
+    <Box sx={{
+      maxWidth: 800,
+      mx: 'auto',
+      mt: { xs: 3, md: 5 },
+      p: { xs: 2, md: 4 },
+      backgroundColor: 'background.paper',
+      borderRadius: 4,
+      boxShadow: theme.shadows[2]
+    }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="center" mb={4}>
+        <Typography variant="h4" fontWeight="700">
+          Profile
+        </Typography>
+        {!editMode && (
           <Button
             variant="outlined"
+            startIcon={<EditIcon />}
             onClick={() => setEditMode(true)}
-            sx={{ color: '#fff', borderColor: '#fff' }}
+            sx={{ display: { xs: 'none', md: 'flex' } }}
           >
             Edit Profile
           </Button>
         )}
-      </Box>
+      </Stack>
+
+      <Stack spacing={2}>
+        <UserField
+          label="Name"
+          value={user.name}
+          name="name"
+          editComponent={
+            <TextField
+              fullWidth
+              variant="outlined"
+              size="small"
+              name="name"
+              value={editedUser.name || ''}
+              onChange={handleChange}
+            />
+          }
+        />
+        <Divider />
+
+        <UserField label="Email" value={user.email} />
+        <Divider />
+
+        <UserField
+          label="Mobile"
+          value={user.mobile}
+          name="mobile"
+          type="tel"
+        />
+        <Divider />
+
+        <UserField
+          label="Date of Birth"
+          value={user.dob ? new Date(user.dob).toLocaleDateString() : ''}
+          name="dob"
+          type="date"
+          editComponent={
+            <TextField
+              fullWidth
+              variant="outlined"
+              size="small"
+              type="date"
+              name="dob"
+              value={editedUser.dob?.slice(0, 10) || ''}
+              onChange={handleChange}
+              InputLabelProps={{ shrink: true }}
+            />
+          }
+        />
+        <Divider />
+
+        <UserField
+          label="Address"
+          value={user.address}
+          name="address"
+        />
+        <Divider />
+
+        <Box sx={{ pt: 2 }}>
+          <Typography variant="h6" gutterBottom>
+            <EventNoteIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+            Order History
+          </Typography>
+          {user.orders?.length > 0 ? (
+            <Stack spacing={2}>
+              {user.orders.map((order) => (
+                <Box key={order.order_id} sx={{
+                  p: 2,
+                  borderRadius: 2,
+                  border: `1px solid ${theme.palette.divider}`
+                }}>
+                  <Stack direction="row" justifyContent="space-between" alignItems="center">
+                    <Typography variant="body1" fontWeight="500">
+                      Order #{order.order_id}
+                    </Typography>
+                    <Chip
+                      label={order.completed ? 'Completed' : 'Pending'}
+                      color={order.completed ? 'success' : 'warning'}
+                      size="small"
+                    />
+                  </Stack>
+                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                    <LocalShippingIcon sx={{ fontSize: 16, mr: 1 }} />
+                    {order.order_items?.length || 0} items
+                  </Typography>
+                </Box>
+              ))}
+            </Stack>
+          ) : (
+            <Typography variant="body1" color="text.secondary">
+              No orders yet
+            </Typography>
+          )}
+        </Box>
+
+        {editMode ? (
+          <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 4 }}>
+            <Button
+              variant="contained"
+              startIcon={<SaveIcon />}
+              onClick={handleSave}
+              fullWidth
+            >
+              Save Changes
+            </Button>
+            <Button
+              variant="outlined"
+              startIcon={<CancelIcon />}
+              onClick={() => {
+                setEditedUser(user);
+                setEditMode(false);
+              }}
+              fullWidth
+            >
+              Cancel
+            </Button>
+          </Stack>
+        ) : (
+          <Button
+            variant="outlined"
+            startIcon={<EditIcon />}
+            onClick={() => setEditMode(true)}
+            fullWidth
+            sx={{ display: { md: 'none', mt: 2 } }}
+          >
+            Edit Profile
+          </Button>
+        )}
+      </Stack>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={6000}
+        onClose={() => setError('')}
+        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+      >
+        <Alert severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
