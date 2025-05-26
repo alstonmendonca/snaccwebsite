@@ -128,35 +128,28 @@ export default function Cart() {
       setIsProcessing(false);
     }
   }, [token, cartItems]);
-  const deleteItem = async (fid) => {
-    try {
-      setIsProcessing(true);
-      const token = localStorage.getItem('token');
-      if (!token) throw new Error('No authentication token');
+  const deleteItem = useCallback(async (fid) => {
+    const originalItems = [...cartItems];
+    setCartItems(prev => prev.filter(item => item.fid !== fid));
+    setIsProcessing(true);
 
-      const response = await axios.post(
+    try {
+      await axios.post(
         `${process.env.REACT_APP_API_URL}/users/cart/deleteitem`,
         { fid },
-        {
-          headers: { 
-            Authorization: `Bearer ${token}`
-          },
-          validateStatus: (status) => status < 500
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          timeout: 5000
         }
       );
-
-      if (response.data.success) {
-        setCartItems(response.data.cart);
-      } else {
-        setError(response.data.error || 'Failed to delete item');
-      }
-    } catch (error) {
-      console.error('Delete error:', error);
-      setError(error.response?.data?.error || 'Cannot connect to server');
+    } catch (err) {
+      console.error('Delete item error:', err);
+      setError(err.response?.data?.error || 'Failed to delete item');
+      setCartItems(originalItems);  // Restore original items on error
     } finally {
       setIsProcessing(false);
     }
-  };
+  }, [token, cartItems]);
   // Animation variants
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
