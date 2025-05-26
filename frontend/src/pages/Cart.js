@@ -1,14 +1,16 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import axios from 'axios';
 import {
   Box,
   Typography,
-  Card,
   IconButton,
   Divider,
   CircularProgress,
   Stack,
   Button,
+  useTheme,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
@@ -16,10 +18,26 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { useNavigate } from 'react-router-dom';
 
 export default function Cart() {
+  // eslint-disable-next-line
+  const theme = useTheme();
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+
+  const fetchCartDetails = useCallback(async () => {
+    try {
+      const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/cart/details`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCartItems(res.data);
+    } catch (err) {
+      setError('Failed to load cart. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     if (!token) {
@@ -27,107 +45,85 @@ export default function Cart() {
       navigate('/signin');
       return;
     }
-
-    const fetchCartDetails = async () => {
-      try {
-        setLoading(true);
-        const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/cart/details`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setCartItems(res.data);
-      } catch (err) {
-        console.error('Failed to fetch cart details:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCartDetails();
-  }, [token, navigate]);
+  }, [token, navigate, fetchCartDetails]);
 
-  const updateQuantity = async (fid, newQuantity) => {
-    if (newQuantity < 1) return; // prevent quantity less than 1
+  const handleApiError = useCallback((err) => {
+    console.error(err);
+    setError('Operation failed. Please try again.');
+    fetchCartDetails(); // Revert to server state
+  }, [fetchCartDetails]);
+
+
+  const updateQuantity = useCallback(async (fid, newQuantity) => {
+    if (newQuantity < 1) return;
+
     try {
+      setCartItems(prev => prev.map(item => 
+        item.fid === fid ? { ...item, quantity: newQuantity } : item
+      ));
+
       await axios.post(
         `${process.env.REACT_APP_API_URL}/users/cart/add`,
         { fid, quantity: newQuantity },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Re-fetch cart after update
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/cart/details`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCartItems(res.data);
     } catch (err) {
-      console.error('Failed to update quantity:', err);
+      handleApiError(err);
     }
-  };
+  }, [token, handleApiError]); // ✅ added handleApiError
 
-  const removeItem = async (fid) => {
+
+  const removeItem = useCallback(async (fid) => {
     try {
+      setCartItems(prev => prev.filter(item => item.fid !== fid));
+
       await axios.post(
         `${process.env.REACT_APP_API_URL}/users/cart/remove`,
         { fid },
         { headers: { Authorization: `Bearer ${token}` } }
       );
-      // Re-fetch cart after removal
-      const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/cart/details`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setCartItems(res.data);
     } catch (err) {
-      console.error('Failed to remove item:', err);
+      handleApiError(err);
     }
-  };
+  }, [token, handleApiError]); // ✅ added handleApiError
 
-  const totalPrice = cartItems.reduce(
-    (sum, item) => sum + item.cost * item.quantity,
-    0
-  );
+
+  const totalPrice = cartItems.reduce((sum, item) => sum + item.cost * item.quantity, 0);
 
   if (loading) {
     return (
-      <Box
-        sx={{
-          height: '80vh',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          bgcolor: '#000',
-          color: '#fff',
-        }}
-      >
-        <CircularProgress sx={{ color: '#fff' }} />
+      <Box sx={{
+        height: '80vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        bgcolor: 'background.default',
+      }}>
+        <CircularProgress />
       </Box>
     );
   }
 
   if (cartItems.length === 0) {
     return (
-      <Box
-        sx={{
-          minHeight: '80vh',
-          bgcolor: '#000',
-          color: '#fff',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexDirection: 'column',
-          px: 2,
-          textAlign: 'center',
-        }}
-      >
+      <Box sx={{
+        minHeight: '80vh',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: 'column',
+        px: 2,
+        textAlign: 'center',
+      }}>
         <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
           Your cart is empty
         </Typography>
         <Button
           variant="outlined"
           onClick={() => navigate('/menu')}
-          sx={{
-            color: '#fff',
-            borderColor: '#fff',
-            '&:hover': { backgroundColor: '#fff', color: '#000' },
-          }}
+          fullWidth
+          sx={{ maxWidth: 300 }}
         >
           Browse Menu
         </Button>
@@ -136,137 +132,130 @@ export default function Cart() {
   }
 
   return (
-    <Box
-      sx={{
-        bgcolor: '#000',
-        minHeight: '100vh',
-        py: 6,
-        px: { xs: 2, sm: 6, md: 10 },
-        color: '#fff',
-      }}
-    >
-      <Typography
-        variant="h4"
-        sx={{ mb: 4, fontWeight: 700, textAlign: 'center' }}
-      >
+    <Box sx={{
+      minHeight: '100vh',
+      py: { xs: 3, md: 6 },
+      px: { xs: 1.5, sm: 4 },
+    }}>
+      <Typography variant="h4" sx={{ 
+        mb: 4, 
+        fontWeight: 700, 
+        textAlign: 'center',
+        fontSize: { xs: '1.75rem', sm: '2rem' }
+      }}>
         Your Cart
       </Typography>
 
-      <Stack spacing={3}>
+      <Stack spacing={2} sx={{ maxWidth: 800, mx: 'auto' }}>
         {cartItems.map((item) => (
-          <Card
+          <Stack
             key={item.fid}
+            spacing={2}
             sx={{
-              bgcolor: '#111',
+              bgcolor: 'background.paper',
               borderRadius: 3,
-              boxShadow: '0 4px 20px rgba(255,255,255,0.05)',
-              display: 'flex',
-              justifyContent: 'space-between',
-              alignItems: 'center',
-              px: 3,
-              py: 2,
+              p: 2,
+              position: 'relative',
             }}
           >
             <Box>
               <Typography variant="h6" sx={{ fontWeight: 600 }}>
                 {item.fname}
               </Typography>
-              <Typography variant="body2" sx={{ color: '#bbb' }}>
-                Category: {item.catname} | {item.veg ? 'Veg' : 'Non-Veg'}
+              <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                {item.catname} • {item.veg ? 'Veg' : 'Non-Veg'}
               </Typography>
             </Box>
 
-            <Box
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-                minWidth: 160,
-              }}
+            <Stack 
+              direction="row" 
+              justifyContent="space-between" 
+              alignItems="center"
             >
-              <IconButton
-                onClick={() => updateQuantity(item.fid, item.quantity - 1)}
-                sx={{
-                  color: '#fff',
-                  border: '1px solid #fff',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                <RemoveIcon />
-              </IconButton>
-
-              <Typography sx={{ minWidth: 24, textAlign: 'center' }}>
-                {item.quantity}
+              <Typography variant="h6">
+                ₹{item.cost * item.quantity}
               </Typography>
+              
+              <Stack direction="row" alignItems="center" spacing={1}>
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center',
+                  bgcolor: 'action.selected',
+                  borderRadius: 2,
+                  px: 1,
+                }}>
+                  <IconButton
+                    onClick={() => updateQuantity(item.fid, item.quantity - 1)}
+                    size="small"
+                    sx={{ p: 0.5 }}
+                  >
+                    <RemoveIcon fontSize="small" />
+                  </IconButton>
+                  
+                  <Typography sx={{ 
+                    minWidth: 32, 
+                    textAlign: 'center',
+                    fontSize: '0.875rem'
+                  }}>
+                    {item.quantity}
+                  </Typography>
+                  
+                  <IconButton
+                    onClick={() => updateQuantity(item.fid, item.quantity + 1)}
+                    size="small"
+                    sx={{ p: 0.5 }}
+                  >
+                    <AddIcon fontSize="small" />
+                  </IconButton>
+                </Box>
 
-              <IconButton
-                onClick={() => updateQuantity(item.fid, item.quantity + 1)}
-                sx={{
-                  color: '#fff',
-                  border: '1px solid #fff',
-                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                }}
-              >
-                <AddIcon />
-              </IconButton>
-
-              <IconButton
-                onClick={() => removeItem(item.fid)}
-                sx={{
-                  color: '#f44336',
-                  border: '1px solid #f44336',
-                  '&:hover': { backgroundColor: 'rgba(244,67,54,0.1)' },
-                }}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </Box>
-
-            <Typography variant="h6" sx={{ minWidth: 70, textAlign: 'right' }}>
-              ₹{item.cost * item.quantity}
-            </Typography>
-          </Card>
+                <IconButton
+                  onClick={() => removeItem(item.fid)}
+                  size="small"
+                  sx={{ color: 'error.main' }}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Stack>
+            </Stack>
+          </Stack>
         ))}
 
-        <Divider sx={{ borderColor: '#444' }} />
+        <Divider sx={{ my: 2 }} />
 
-        <Box
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            mt: 2,
-          }}
-        >
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+        <Stack direction="row" justifyContent="space-between" sx={{ px: 1 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
             Total:
           </Typography>
-          <Typography variant="h5" sx={{ fontWeight: 700 }}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
             ₹{totalPrice}
           </Typography>
-        </Box>
+        </Stack>
 
-        <Box sx={{ textAlign: 'center', mt: 4 }}>
-          <Button
-            variant="contained"
-            sx={{
-              backgroundColor: '#fff',
-              color: '#000',
-              px: 6,
-              py: 1.5,
-              fontWeight: 700,
-              fontSize: '1.1rem',
-              borderRadius: 3,
-              '&:hover': {
-                backgroundColor: '#e0e0e0',
-              },
-            }}
-            onClick={() => alert('Checkout feature coming soon!')}
-          >
-            Checkout
-          </Button>
-        </Box>
+        <Button
+          variant="contained"
+          fullWidth
+          sx={{
+            mt: 3,
+            py: 1.5,
+            borderRadius: 3,
+            fontWeight: 700,
+          }}
+          onClick={() => alert('Checkout feature coming soon!')}
+        >
+          Checkout
+        </Button>
       </Stack>
+
+      <Snackbar
+        open={!!error}
+        autoHideDuration={4000}
+        onClose={() => setError('')}
+      >
+        <Alert severity="error" sx={{ width: '100%' }}>
+          {error}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }
