@@ -131,11 +131,18 @@ export default function Cart() {
   const deleteItem = async (fid) => {
     try {
       setIsProcessing(true);
-      // Ensure path matches exactly with backend route
+      const token = localStorage.getItem('token');
+      if (!token) throw new Error('No authentication token');
+
       const response = await axios.post(
-        '/users/cart/deleteitem', // Must match backend route
+        `${process.env.REACT_APP_API_URL}/users/cart/deleteitem`,
         { fid },
-        { validateStatus: (status) => status < 500 } // Handle 4xx errors
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`
+          },
+          validateStatus: (status) => status < 500
+        }
       );
 
       if (response.data.success) {
@@ -144,8 +151,8 @@ export default function Cart() {
         setError(response.data.error || 'Failed to delete item');
       }
     } catch (error) {
-      console.error('Network error:', error);
-      setError('Cannot connect to server');
+      console.error('Delete error:', error);
+      setError(error.response?.data?.error || 'Cannot connect to server');
     } finally {
       setIsProcessing(false);
     }
