@@ -3,7 +3,7 @@ import { Box, TextField, Button, Typography, Link } from "@mui/material";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // Import your auth hook
-const API_BASE_URL = process.env.REACT_APP_API_URL;
+
 export default function SignIn() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

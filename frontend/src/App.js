@@ -1,33 +1,17 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useMemo } from "react";
 import Navbar from "./components/NavBar";
 import {
   BrowserRouter as Router,
   Routes,
   Route,
-  Link,
-  NavLink,
-  useNavigate,
 } from "react-router-dom";
 import {
   createTheme,
   ThemeProvider,
   CssBaseline,
-  AppBar,
   Box,
-  Toolbar,
-  Typography,
-  Button,
-  IconButton,
-  Drawer,
-  List,
-  ListItemButton,
-  ListItemText,
-  useMediaQuery,
   keyframes,
-  styled,
-  alpha,
 } from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
 import { AuthProvider } from "./context/AuthContext";
 import Home from "./pages/Home";
 import Menu from "./pages/Menu";
@@ -41,10 +25,6 @@ const fadeIn = keyframes`
   to { opacity: 1; transform: translateY(0); }
 `;
 
-const focusVisible = {
-  outline: "2px solid #fff",
-  outlineOffset: 2,
-};
 
 const theme = createTheme({
   palette: {
