@@ -1,4 +1,3 @@
-// models/Order.js
 const mongoose = require('mongoose');
 
 const orderSchema = new mongoose.Schema({
@@ -42,6 +41,11 @@ const orderSchema = new mongoose.Schema({
     type: Number,
     required: true,
     min: 0,
+  },
+  status: {
+    type: Number,
+    enum: [0, 1],       // 0 = pending, 1 = completed
+    default: 0,
   }
 }, { timestamps: true });
 
