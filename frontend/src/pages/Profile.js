@@ -20,6 +20,8 @@ export default function Profile() {
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const navigate = useNavigate();
+  const [orders, setOrders] = useState([]);
+
 
   const fetchProfile = useCallback(async () => {
     const token = localStorage.getItem('token');
@@ -33,7 +35,16 @@ export default function Profile() {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(res.data);
+      try {
+        const ordersRes = await axios.get(`${process.env.REACT_APP_API_URL}/orders/my`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setOrders(ordersRes.data);
+      } catch (orderErr) {
+        console.error('Failed to load orders:', orderErr);
+      }
       setEditedUser(res.data);
+      
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load profile');
       if (err.response?.status === 401) navigate('/signin');
@@ -194,27 +205,30 @@ export default function Profile() {
             <EventNoteIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
             Order History
           </Typography>
-          {user.orders?.length > 0 ? (
+          {orders.length > 0 ? (
             <Stack spacing={2}>
-              {user.orders.map((order) => (
-                <Box key={order.order_id} sx={{
+              {orders.map((order) => (
+                <Box key={order._id} sx={{
                   p: 2,
                   borderRadius: 2,
                   border: `1px solid ${theme.palette.divider}`
                 }}>
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
                     <Typography variant="body1" fontWeight="500">
-                      Order #{order.order_id}
+                      Order ID: {order._id.slice(-6).toUpperCase()}
                     </Typography>
                     <Chip
-                      label={order.completed ? 'Completed' : 'Pending'}
-                      color={order.completed ? 'success' : 'warning'}
+                      label={order.paymentMethod === 'online' ? 'Paid Online' : 'Pay at Cafe'}
+                      color={order.paymentMethod === 'online' ? 'success' : 'warning'}
                       size="small"
                     />
                   </Stack>
                   <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                     <LocalShippingIcon sx={{ fontSize: 16, mr: 1 }} />
-                    {order.order_items?.length || 0} items
+                    {order.cartItems?.length || 0} items — ₹{order.totalPrice}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {new Date(order.datetime).toLocaleString()}
                   </Typography>
                 </Box>
               ))}
@@ -225,6 +239,7 @@ export default function Profile() {
             </Typography>
           )}
         </Box>
+
 
         {editMode ? (
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 4 }}>

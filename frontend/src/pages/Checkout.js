@@ -43,13 +43,15 @@ export default function Checkout() {
     setSnackbarOpen(false);
     };
     const handleSubmit = async () => {
-        const payload = {
-            name,
-            phone,
-            cartItems,
-            datetime: dayjs().format(),
-            paymentId: paymentMethod === 'online' ? paymentId : null,
-        };
+    const payload = {
+      name,
+      phone,
+      cartItems,
+      datetime: dayjs().format(),
+      paymentId: paymentMethod === 'online' ? paymentId : null,
+      paymentMethod,
+      totalPrice, // <-- this is what you're missing
+    };
 
         try {
             await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {

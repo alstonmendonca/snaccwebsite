@@ -9,6 +9,7 @@ const { getSocket } = require('../electronSocket');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const authenticateToken = require('../middleware/auth');
 const { queueOrder } = require('../webSocketManager');
+const Order = require('../models/Order');  // Your Mongoose order model
 // --- Signup ---
 router.post('/signup', async (req, res) => {
   const { name, email, password, mobile } = req.body;
@@ -308,31 +309,85 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
   }
 });
 
-const { queueOrder } = require('../webSocketManager');
 
-router.post('/orders/place', async (req, res) => {
-  const { name, phone, cartItems, datetime, paymentId } = req.body;
+router.post('/orders/place', authenticateToken, async (req, res) => {
+  const user = req.user;
+  const { name, phone, datetime, paymentId, paymentMethod, totalPrice } = req.body;
 
-  const orderData = {
-    name,
-    phone,
-    cartItems,
-    datetime,
-    paymentId,
-    source: 'backend-api'
-  };
+  if (!name || !phone || !datetime || !paymentMethod || totalPrice == null) {
+    return res.status(400).json({ success: false, message: 'Missing required order fields' });
+  }
 
   try {
-    queueOrder(orderData);
+    // Validate datetime
+    const orderDate = new Date(datetime);
+    if (isNaN(orderDate)) {
+      return res.status(400).json({ success: false, message: 'Invalid datetime format' });
+    }
+
+    if (!user.cart || user.cart.length === 0) {
+      return res.status(400).json({ success: false, message: 'Cart is empty' });
+    }
+
+    // Get list of all fid in cart
+    const fids = user.cart.map(item => item.fid);
+
+    // Query FoodItems by fid
+    const foodItems = await FoodItem.find({ fid: { $in: fids } });
+
+    // Map FoodItems by fid for quick lookup
+    const foodItemMap = new Map(foodItems.map(fi => [fi.fid, fi]));
+
+    // Build full cartItems array for order, merging quantity from user.cart
+    const cartItems = user.cart.map(ci => {
+      const food = foodItemMap.get(ci.fid);
+      if (!food) {
+        throw new Error(`Food item with fid ${ci.fid} not found`);
+      }
+      return {
+        _id: food._id,
+        title: food.fname, // assuming fname is the title
+        quantity: ci.quantity,
+        price: food.cost // or the appropriate price field
+      };
+    });
+
+    const newOrder = new Order({
+      user: user._id,
+      name,
+      phone,
+      cartItems,
+      datetime: orderDate,
+      paymentId: paymentMethod === 'online' ? paymentId : null,
+      paymentMethod,
+      totalPrice,
+      source: 'backend-api'
+    });
+
+    const savedOrder = await newOrder.save();
+
+    queueOrder({
+      orderId: savedOrder._id,
+      name,
+      phone,
+      cartItems,
+      datetime: orderDate,
+      paymentId: paymentMethod === 'online' ? paymentId : null,
+      paymentMethod,
+      totalPrice,
+      source: 'backend-api'
+    });
+
     return res.status(200).json({
       success: true,
-      message: 'Order placed and will be sent to tunnel when ready'
+      message: 'Order placed and will be sent to tunnel when ready',
+      orderId: savedOrder._id
     });
   } catch (err) {
-    console.error('Error queueing order:', err);
+    console.error('Error saving or queueing order:', err);
     return res.status(500).json({
       success: false,
-      message: 'Failed to queue order'
+      message: err.message || 'Failed to place order'
     });
   }
 });
