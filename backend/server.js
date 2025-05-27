@@ -152,7 +152,21 @@ async function createWebSocketWithIPv4(wsUrl) {
 
   return ws;
 }
-
+async function waitForDns(hostname, maxRetries = 10, delayMs = 1000) {
+  let attempts = 0;
+  while (attempts < maxRetries) {
+    try {
+      await dns.lookup(hostname);
+      // If lookup succeeds, DNS is ready
+      return;
+    } catch (err) {
+      attempts++;
+      console.warn(`DNS lookup failed for ${hostname}, retrying... (${attempts}/${maxRetries})`);
+      await new Promise(res => setTimeout(res, delayMs));
+    }
+  }
+  throw new Error(`DNS lookup failed for ${hostname} after ${maxRetries} attempts`);
+}
 app.post('/api/register-electron-tunnel', async (req, res) => {
   const { wsUrl } = req.body;
   console.log('Received Electron WebSocket URL:', wsUrl);
