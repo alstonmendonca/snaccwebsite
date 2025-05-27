@@ -310,7 +310,7 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
 });
 
 
-router.post('/orders/place', authenticateToken, async (req, res) => {
+router.post('/users/orders/place', authenticateToken, async (req, res) => {
   const user = req.user;
   const { name, phone, datetime, paymentId, paymentMethod, totalPrice } = req.body;
 
@@ -319,7 +319,6 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
   }
 
   try {
-    // Validate datetime
     const orderDate = new Date(datetime);
     if (isNaN(orderDate)) {
       return res.status(400).json({ success: false, message: 'Invalid datetime format' });
@@ -329,26 +328,19 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
       return res.status(400).json({ success: false, message: 'Cart is empty' });
     }
 
-    // Get list of all fid in cart
     const fids = user.cart.map(item => item.fid);
-
-    // Query FoodItems by fid
     const foodItems = await FoodItem.find({ fid: { $in: fids } });
 
-    // Map FoodItems by fid for quick lookup
     const foodItemMap = new Map(foodItems.map(fi => [fi.fid, fi]));
 
-    // Build full cartItems array for order, merging quantity from user.cart
     const cartItems = user.cart.map(ci => {
       const food = foodItemMap.get(ci.fid);
-      if (!food) {
-        throw new Error(`Food item with fid ${ci.fid} not found`);
-      }
+      if (!food) throw new Error(`Food item with fid ${ci.fid} not found`);
       return {
         _id: food._id,
-        title: food.fname, // assuming fname is the title
+        title: food.fname,
         quantity: ci.quantity,
-        price: food.cost // or the appropriate price field
+        price: food.cost
       };
     });
 
@@ -366,6 +358,7 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
 
     const savedOrder = await newOrder.save();
 
+    // Queue it for WebSocket delivery
     queueOrder({
       orderId: savedOrder._id,
       name,
@@ -384,10 +377,10 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
       orderId: savedOrder._id
     });
   } catch (err) {
-    console.error('Error saving or queueing order:', err);
+    console.error('Order error:', err);
     return res.status(500).json({
       success: false,
-      message: err.message || 'Failed to place order'
+      message: err.message || 'Order placement failed'
     });
   }
 });
