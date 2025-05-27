@@ -310,7 +310,7 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
 });
 
 
-router.post('/users/orders/place', authenticateToken, async (req, res) => {
+router.post('/orders/place', authenticateToken, async (req, res) => {
   const user = req.user;
   const { name, phone, datetime, paymentId, paymentMethod, totalPrice } = req.body;
 
