@@ -9,7 +9,7 @@ const dns = require('dns').promises;
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
 const { setSocket, getSocket } = require('./electronSocket');
-
+const dns = require('dns').promises;
 const app = express();
 const WebSocket = require('ws');
 
@@ -134,19 +134,66 @@ function startServer() {
   // ======================
   // Cloudflare Tunnel WebSocket
   // ======================
+async function createWebSocketWithIPv4(wsUrl) {
+  const urlObj = new URL(wsUrl);
+  const hostname = urlObj.hostname;
+  const port = urlObj.port || (urlObj.protocol === 'wss:' ? 443 : 80);
+  const protocol = urlObj.protocol.slice(0, -1); // 'ws' or 'wss'
 
-async function waitForDns(hostname, retries = 10, delayMs = 1000) {
-  for (let i = 0; i < retries; i++) {
-    try {
-      await dns.lookup(hostname);
-      return true;
-    } catch {
-      console.log(`DNS lookup failed for ${hostname}, retrying... (${i + 1}/${retries})`);
-      await new Promise(r => setTimeout(r, delayMs));
-    }
-  }
-  throw new Error(`DNS lookup failed for ${hostname} after ${retries} retries`);
+  // Resolve hostname to IPv4 address explicitly
+  const { address: ip } = await dns.lookup(hostname, { family: 4 });
+
+  // Create WebSocket with IP but override Host header and TLS SNI
+  const ws = new WebSocket(`${protocol}://${ip}:${port}`, {
+    headers: {
+      Host: hostname
+    },
+    servername: hostname // for TLS SNI (needed for wss)
+  });
+
+  return ws;
 }
+app.post('/api/register-electron-tunnel', async (req, res) => {
+  const { wsUrl } = req.body;
+  console.log('Received Electron WebSocket URL:', wsUrl);
+
+  if (electronSocket) {
+    console.log('Closing previous Electron WebSocket connection');
+    electronSocket.close();
+    electronSocket = null;
+  }
+
+  try {
+    const hostname = new URL(wsUrl).hostname;
+    await waitForDns(hostname); // your existing DNS wait helper if any
+
+    const ws = await createWebSocketWithIPv4(wsUrl);
+
+    ws.on('open', () => {
+      console.log('Connected to Electron app via tunnel');
+      electronSocket = ws;
+      ws.send('Hello from the backend!');
+    });
+
+    ws.on('message', (msg) => {
+      console.log('Message from Electron app:', msg.toString());
+    });
+
+    ws.on('close', () => {
+      console.log('Electron WebSocket disconnected');
+      electronSocket = null;
+    });
+
+    ws.on('error', (err) => {
+      console.error('WebSocket error:', err.message);
+    });
+
+    res.status(200).json({ status: 'WebSocket connection initiated' });
+  } catch (error) {
+    console.error('Failed to connect WebSocket:', error.message);
+    res.status(500).json({ error: 'Failed to establish WebSocket connection' });
+  }
+});
 
 app.post('/api/register-electron-tunnel', async (req, res) => {
   const { wsUrl } = req.body;
