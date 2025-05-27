@@ -308,5 +308,31 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
   }
 });
 
+router.post('/orders/place', async (req, res) => {
+  const { name, phone, cartItems, datetime, paymentId } = req.body;
+
+  const orderData = {
+    name,
+    phone,
+    cartItems,
+    datetime,
+    paymentId,
+    source: 'backend-api' // Optional tag for your tunnel
+  };
+
+  try {
+    if (ws.readyState === 1) {
+      ws.send(JSON.stringify({ event: 'newOrder', data: orderData }));
+      return res.status(200).json({ success: true, message: 'Order placed and sent to tunnel' });
+    } else {
+      console.warn('WebSocket not connected');
+      return res.status(503).json({ success: false, message: 'WebSocket not connected' });
+    }
+  } catch (err) {
+    console.error('Error sending order:', err);
+    return res.status(500).json({ success: false, message: 'Failed to place order' });
+  }
+});
+
 
 module.exports = router;
