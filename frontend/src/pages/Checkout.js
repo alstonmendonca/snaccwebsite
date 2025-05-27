@@ -32,6 +32,7 @@ export default function Checkout() {
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' or 'error'
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false); // ← Add this
   const navigate = useNavigate();
     useEffect(() => {
         if (user) {
@@ -43,39 +44,41 @@ export default function Checkout() {
     if (reason === 'clickaway') return;
     setSnackbarOpen(false);
     };
-  const handleSubmit = async () => {
-    setLoading(true);
-    const payload = {
-      name,
-      phone,
-      cartItems,
-      datetime: dayjs().format(),
-      paymentId: paymentMethod === 'online' ? paymentId : null,
-      paymentMethod,
-      totalPrice,
+    const handleSubmit = async () => {
+      setLoading(true);
+      const payload = {
+        name,
+        phone,
+        cartItems,
+        datetime: dayjs().format(),
+        paymentId: paymentMethod === 'online' ? paymentId : null,
+        paymentMethod,
+        totalPrice,
+      };
+
+      try {
+        await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        });
+
+        setSubmitted(true); // Prevent further clicks
+        setSnackbarMsg('Order placed successfully!');
+        setSnackbarSeverity('success');
+        setSnackbarOpen(true);
+
+        setTimeout(() => {
+          navigate('/orders');
+        }, 1500);
+      } catch (err) {
+        setSnackbarMsg('Failed to place order. Please try again.');
+        setSnackbarSeverity('error');
+        setSnackbarOpen(true);
+        console.error(err);
+      } finally {
+        setLoading(false); // But don't reset `submitted` so button stays disabled on success
+      }
     };
 
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      });
-
-      setSnackbarMsg('Order placed successfully!');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-
-      setTimeout(() => {
-        navigate('/orders');
-      }, 1500);
-    } catch (err) {
-      setSnackbarMsg('Failed to place order. Please try again.');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
 
@@ -186,7 +189,7 @@ export default function Checkout() {
           variant="contained"
           size="large"
           onClick={handleSubmit}
-          disabled={loading || !name || !phone || (paymentMethod === 'online' && !paymentId)}
+          disabled={submitted || loading || !name || !phone || (paymentMethod === 'online' && !paymentId)}
           startIcon={loading && <CircularProgress size={20} color="inherit" />}
         >
           {loading ? 'Placing Order...' : 'Confirm Order'}
