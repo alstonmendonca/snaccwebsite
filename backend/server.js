@@ -12,7 +12,7 @@ const userRoutes = require('./routes/user');
 const { setSocket, getSocket } = require('./electronSocket');
 const app = express();
 const WebSocket = require('ws');
-
+const { setSocket } = require('./webSocketManager'); // Adjust path as needed
 
 // ======================
 // Security Middleware
@@ -178,77 +178,38 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
     return res.status(400).json({ error: 'Invalid WebSocket URL' });
   }
 
+  // Close existing socket
   const existingSocket = getSocket();
   if (existingSocket) {
-    if (existingSocket.readyState === WebSocket.OPEN || existingSocket.readyState === WebSocket.CONNECTING) {
-      console.log('Closing previous Electron WebSocket connection');
-      existingSocket.close();
-    }
-    setSocket(null);
+    console.log('Closing existing WebSocket connection');
+    existingSocket.terminate(); // force close immediately
   }
 
   try {
     const hostname = new URL(wsUrl).hostname;
     await waitForDns(hostname);
 
-    const createWsWithTimeout = () => {
-      return Promise.race([
-        createWebSocketWithIPv4(wsUrl),
-        new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('WebSocket connection timed out')), 10000)
-        )
-      ]);
-    };
+    const ws = await createWebSocketWithIPv4(wsUrl); // your function
 
-    const ws = await createWsWithTimeout();
-
-    // Wait for 'open' or 'error' event to respond:
-    await new Promise((resolve, reject) => {
-      const cleanup = () => {
-        ws.removeAllListeners('open');
-        ws.removeAllListeners('error');
-      };
-
-      ws.once('open', () => {
-        console.log('Connected to Electron app via tunnel');
-        setSocket(ws);
-
-        try {
-          ws.send('Hello from the backend!');
-        } catch (err) {
-          console.error('Failed to send message:', err.message);
-        }
-
-        cleanup();
-        resolve();
-      });
-
-      ws.once('error', (err) => {
-        console.error('WebSocket error during connection:', err.message);
-        cleanup();
-        reject(err);
-      });
+    ws.once('open', () => {
+      console.log('WebSocket tunnel connected');
+      setSocket(ws);
+      try {
+        ws.send('Hello from backend!');
+      } catch (err) {
+        console.error('Initial message send failed:', err.message);
+      }
     });
 
-    // Set long-lived handlers outside the promise:
+    // Also allow for logging messages if needed:
     ws.on('message', (msg) => {
-      console.log('Message from Electron app:', msg.toString());
-    });
-
-    ws.on('close', () => {
-      console.log('Electron WebSocket disconnected');
-      setSocket(null);
-    });
-
-    ws.on('error', (err) => {
-      console.error('WebSocket error:', err.message);
-      setSocket(null);
+      console.log('Message from Electron:', msg.toString());
     });
 
     return res.status(200).json({ status: 'WebSocket connection established' });
   } catch (error) {
-    console.error('Failed to connect WebSocket:', error.message);
-    return res.status(500).json({ error: 'Failed to establish WebSocket connection' });
+    console.error('Tunnel registration failed:', error.message);
+    return res.status(500).json({ error: 'Tunnel registration failed' });
   }
 });
 
