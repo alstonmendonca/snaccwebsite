@@ -35,7 +35,7 @@ export default function Orders() {
       const res = await axios.get(`${process.env.REACT_APP_API_URL}/users/orders`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setOrders(res.data);
+      setOrders(res.data.orders);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to load orders');
       if (err.response?.status === 401) navigate('/signin');
@@ -147,7 +147,7 @@ export default function Orders() {
                 </Stack>
 
                 <Chip
-                  label={order.paymentMethod === 'online' ? 'PAID' : 'PENDING'}
+                  label={order.paymentMethod === 'online' ? 'PAID' : 'NOT PAID'}
                   size="small"
                   variant="outlined"
                   sx={{
@@ -159,6 +159,21 @@ export default function Orders() {
                     bgcolor: 'transparent',
                     borderColor: order.paymentMethod === 'online' ? '#4caf50' : 'rgba(255,255,255,0.4)'
                   }}
+                />
+                <Chip
+                label={order.status === 1 ? 'COMPLETED' : 'PENDING'}
+                size="small"
+                variant="outlined"
+                sx={{
+                    fontWeight: 700,
+                    fontSize: '0.75rem',
+                    borderStyle: order.status === 1 ? 'solid' : 'dashed',
+                    borderWidth: '1.5px',
+                    color: order.status === 1 ? '#fff' : 'rgba(255,255,255,0.8)',
+                    bgcolor: 'transparent',
+                    borderColor: order.status === 1 ? '#2e7d32' : 'rgba(255,255,255,0.4)',
+                    ml: 1
+                }}
                 />
               </Stack>
 
