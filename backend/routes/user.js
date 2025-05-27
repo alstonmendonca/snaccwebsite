@@ -309,7 +309,6 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
   }
 });
 
-
 router.post('/orders/place', authenticateToken, async (req, res) => {
   const user = req.user;
   const { name, phone, datetime, paymentId, paymentMethod, totalPrice } = req.body;
@@ -388,6 +387,21 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
   }
 });
 
+// GET /users/orders - Get all orders for the logged-in user
+router.get('/orders', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const orders = await Order.find({ user: userId })
+      .sort({ createdAt: -1 }) // most recent first
+      .lean(); // plain JS objects
+
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error('Error fetching orders:', err);
+    res.status(500).json({ success: false, message: 'Failed to fetch orders' });
+  }
+});
 
 
 module.exports = router;
