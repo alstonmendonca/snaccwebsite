@@ -105,7 +105,7 @@ export default function Cart() {
       setIsProcessing(false);
     }
   }, [token, fetchCartDetails, updateLocalQuantity]);
-
+// eslint-disable-next-line
   const removeItem = useCallback(async (fid) => {
     const originalItems = [...cartItems];
     setCartItems(prev => prev.filter(item => item.fid !== fid));
@@ -232,19 +232,19 @@ export default function Cart() {
     >
       <Box sx={{
         minHeight: '100vh',
-        py: { xs: 3, md: 6 },
-        px: { xs: 1.5, sm: 4 },
+        py: { xs: 2, md: 6 },
+        px: { xs: 1, sm: 4 },
       }}>
         <Typography variant="h4" sx={{ 
-          mb: 4, 
+          mb: { xs: 2, md: 4 }, 
           fontWeight: 700, 
           textAlign: 'center',
-          fontSize: { xs: '1.75rem', sm: '2rem' }
+          fontSize: { xs: '1.5rem', sm: '2rem' }
         }}>
           Your Cart
         </Typography>
 
-        <Stack spacing={2} sx={{ maxWidth: 800, mx: 'auto' }}>
+        <Stack spacing={2} sx={{ maxWidth: 800, mx: 'auto', px: { xs: 0.5, sm: 0 } }}>
           <AnimatePresence>
             {cartItems.map((item) => (
               <motion.div
@@ -257,30 +257,33 @@ export default function Cart() {
                 transition={{ duration: 0.2 }}
               >
                 <Stack
-                  spacing={2}
+                  spacing={1.5}
                   sx={{
                     bgcolor: 'background.paper',
-                    borderRadius: 3,
-                    p: 2,
+                    borderRadius: 2,
+                    p: { xs: 1.5, sm: 2 },
                     boxShadow: theme.shadows[1],
                     '&:hover': { boxShadow: theme.shadows[3] },
                   }}
                 >
                   <Box>
-                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       {item.fname}
                     </Typography>
-                    <Typography variant="body2" sx={{ color: 'text.secondary' }}>
+                    <Typography variant="body2" sx={{ 
+                      color: 'text.secondary',
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                    }}>
                       {item.catname} • {item.veg ? 'Vegetarian' : 'Non-Vegetarian'} • ₹{item.cost} each
                     </Typography>
                   </Box>
 
                   <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="h6">
+                    <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                       ₹{(item.cost * (localChanges[item.fid]?.quantity || item.quantity)).toFixed(2)}
                     </Typography>
                     
-                    <Stack direction="row" alignItems="center" spacing={1}>
+                    <Stack direction="row" alignItems="center" spacing={0.5}>
                       <Box sx={{ 
                         display: 'flex', 
                         alignItems: 'center', 
@@ -290,34 +293,42 @@ export default function Cart() {
                       }}>
                         <Tooltip title="Reduce quantity">
                           <IconButton 
+                            size="small"
                             onClick={() => updateQuantity(item.fid, (localChanges[item.fid]?.quantity || item.quantity) - 1)}
                             disabled={isProcessing}
                           >
-                            <RemoveIcon />
+                            <RemoveIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         
-                        <Typography sx={{ mx: 1.5, minWidth: 24, textAlign: 'center' }}>
+                        <Typography sx={{ 
+                          mx: 1, 
+                          minWidth: 20, 
+                          textAlign: 'center',
+                          fontSize: { xs: '0.875rem', sm: '1rem' }
+                        }}>
                           {localChanges[item.fid]?.quantity || item.quantity}
                         </Typography>
                         
                         <Tooltip title="Increase quantity">
                           <IconButton 
+                            size="small"
                             onClick={() => updateQuantity(item.fid, (localChanges[item.fid]?.quantity || item.quantity) + 1)}
                             disabled={isProcessing}
                           >
-                            <AddIcon />
+                            <AddIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </Box>
                       
                       <Tooltip title="Remove item">
                         <IconButton 
+                          size="small"
                           onClick={() => deleteItem(item.fid)}
                           disabled={isProcessing}
                           color="error"
                         >
-                          <DeleteIcon />
+                          <DeleteIcon fontSize="small" />
                         </IconButton>
                       </Tooltip>
                     </Stack>
@@ -327,22 +338,22 @@ export default function Cart() {
             ))}
           </AnimatePresence>
 
-          <Divider sx={{ my: 3 }} />
+          <Divider sx={{ my: { xs: 2, md: 3 } }} />
 
           <Box sx={{ 
             bgcolor: 'background.paper', 
-            p: 3, 
+            p: { xs: 2, sm: 3 }, 
             borderRadius: 3,
             boxShadow: theme.shadows[1]
           }}>
-            <Stack spacing={2}>
-              <Typography variant="h5" sx={{ fontWeight: 700 }}>
+            <Stack spacing={1.5}>
+              <Typography variant="h5" sx={{ fontWeight: 700, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
                 Order Summary
               </Typography>
               
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="body1">Subtotal:</Typography>
-                <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                <Typography variant="body1" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Subtotal:</Typography>
+                <Typography variant="body1" sx={{ fontWeight: 600, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                   ₹{totalPrice.toFixed(2)}
                 </Typography>
               </Stack>
@@ -350,8 +361,8 @@ export default function Cart() {
               <Divider />
               
               <Stack direction="row" justifyContent="space-between">
-                <Typography variant="h6">Total:</Typography>
-                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                <Typography variant="h6" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>Total:</Typography>
+                <Typography variant="h6" sx={{ fontWeight: 800, fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                   ₹{(totalPrice).toFixed(2)}
                 </Typography>
               </Stack>
@@ -363,10 +374,10 @@ export default function Cart() {
                 disabled={isProcessing || cartItems.length === 0}
                 sx={{
                   mt: 2,
-                  py: 2,
+                  py: { xs: 1.5, sm: 2 },
                   borderRadius: 3,
                   fontWeight: 700,
-                  fontSize: '1.1rem'
+                  fontSize: { xs: '1rem', sm: '1.1rem' }
                 }}
               >
                 {isProcessing ? (
