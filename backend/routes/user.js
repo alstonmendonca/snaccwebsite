@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 require('dotenv').config();
 const FoodItem = require('../models/FoodItem');
-
+const { getSocket } = require('./electronSocket');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const authenticateToken = require('../middleware/auth');
 
@@ -309,6 +309,7 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
 });
 
 router.post('/orders/place', async (req, res) => {
+  const socket = getSocket();
   const { name, phone, cartItems, datetime, paymentId } = req.body;
 
   const orderData = {
@@ -317,12 +318,12 @@ router.post('/orders/place', async (req, res) => {
     cartItems,
     datetime,
     paymentId,
-    source: 'backend-api' // Optional tag for your tunnel
+    source: 'backend-api'
   };
 
   try {
-    if (ws.readyState === 1) {
-      ws.send(JSON.stringify({ event: 'newOrder', data: orderData }));
+    if (socket && socket.readyState === 1) {
+      socket.send(JSON.stringify({ event: 'newOrder', data: orderData }));
       return res.status(200).json({ success: true, message: 'Order placed and sent to tunnel' });
     } else {
       console.warn('WebSocket not connected');

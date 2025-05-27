@@ -8,11 +8,11 @@ require('dotenv').config({ path: './backend/.env' });
 const dns = require('dns').promises;
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
+const { setSocket, getSocket } = require('./electronSocket');
 
 const app = express();
 const WebSocket = require('ws');
 
-let electronSocket = null;
 // ======================
 // Security Middleware
 // ======================
@@ -135,7 +135,7 @@ function startServer() {
   // Cloudflare Tunnel WebSocket
   // ======================
 
-async function waitForDns(hostname, retries = 10, delayMs = 1000) {
+async function waitForDns(hostname, retries = 10, delayMs = 3000) {
   for (let i = 0; i < retries; i++) {
     try {
       await dns.lookup(hostname);
@@ -152,10 +152,11 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
   const { wsUrl } = req.body;
   console.log('Received Electron WebSocket URL:', wsUrl);
 
-  if (electronSocket) {
+  const existingSocket = getSocket();
+  if (existingSocket) {
     console.log('Closing previous Electron WebSocket connection');
-    electronSocket.close();
-    electronSocket = null;
+    existingSocket.close();
+    setSocket(null);
   }
 
   try {
@@ -166,7 +167,7 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
 
     ws.on('open', () => {
       console.log('Connected to Electron app via tunnel');
-      electronSocket = ws;
+      setSocket(ws);
       ws.send('Hello from the backend!');
     });
 
@@ -176,7 +177,7 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
 
     ws.on('close', () => {
       console.log('Electron WebSocket disconnected');
-      electronSocket = null;
+      setSocket(null);
     });
 
     ws.on('error', (err) => {
