@@ -4,7 +4,8 @@ const cors = require('cors');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
-require('dotenv').config({ path: './backend/.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const dns = require('dns').promises;
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
@@ -161,15 +162,20 @@ async function waitForDns(hostname, maxRetries = 10, delayMs = 1000) {
       return;
     } catch (err) {
       attempts++;
-      console.warn(`DNS lookup failed for ${hostname}, retrying... (${attempts}/${maxRetries})`);
+      console.warn(`DNS lookup failed for ${hostname}. Retrying attempt ${attempts}/${maxRetries}...`);
       await new Promise(res => setTimeout(res, delayMs));
     }
   }
   throw new Error(`DNS lookup failed for ${hostname} after ${maxRetries} attempts`);
 }
+
 app.post('/api/register-electron-tunnel', async (req, res) => {
   const { wsUrl } = req.body;
   console.log('Received Electron WebSocket URL:', wsUrl);
+
+  if (!wsUrl || !wsUrl.startsWith('wss://')) {
+    return res.status(400).json({ error: 'Invalid WebSocket URL' });
+  }
 
   const existingSocket = getSocket();
   if (existingSocket) {
@@ -182,14 +188,38 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
     const hostname = new URL(wsUrl).hostname;
     await waitForDns(hostname);
 
-    const ws = new WebSocket(wsUrl);
+    // Timeout wrapper for WebSocket creation
+    const createWsWithTimeout = () => {
+      return Promise.race([
+        createWebSocketWithIPv4(wsUrl),
+        new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('WebSocket connection timed out')), 10000)
+        )
+      ]);
+    };
 
-    ws.on('open', () => {
+    const ws = await createWsWithTimeout();
+
+    // Attach handlers before 'open'
+    ws.once('open', () => {
       console.log('Connected to Electron app via tunnel');
       setSocket(ws);
-      ws.send('Hello from the backend!');
+
+      try {
+        ws.send('Hello from the backend!');
+      } catch (err) {
+        console.error('Failed to send message:', err.message);
+      }
+
+      res.status(200).json({ status: 'WebSocket connection established' });
     });
 
+    ws.once('error', (err) => {
+      console.error('WebSocket error during connection:', err.message);
+      res.status(500).json({ error: 'WebSocket connection failed' });
+    });
+
+    // Other long-lived handlers
     ws.on('message', (msg) => {
       console.log('Message from Electron app:', msg.toString());
     });
@@ -199,16 +229,12 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
       setSocket(null);
     });
 
-    ws.on('error', (err) => {
-      console.error('WebSocket error:', err.message);
-    });
-
-    res.status(200).json({ status: 'WebSocket connection initiated' });
   } catch (error) {
     console.error('Failed to connect WebSocket:', error.message);
     res.status(500).json({ error: 'Failed to establish WebSocket connection' });
   }
 });
+
 
   // ======================
   // Server Start
