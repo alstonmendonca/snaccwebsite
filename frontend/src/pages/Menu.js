@@ -78,6 +78,8 @@ export default function Menu() {
   const [snackbarSeverity, setSnackbarSeverity] = useState('info');
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const [categories, setCategories] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
 
   // Fetch menu items with error handling
   const fetchMenuItems = useCallback(async () => {
@@ -85,6 +87,8 @@ export default function Menu() {
       setLoading(true);
       const response = await axios.get(`${API_BASE_URL}/fooditems`);
       setItems(response.data);
+      const categories = ['All', ...new Set(response.data.map(item => item.catname))];
+      setCategories(categories);
     } catch (err) {
       console.error('Error fetching food items:', err);
       setError('Failed to load menu. Please try again later.');
@@ -133,10 +137,13 @@ export default function Menu() {
 
   // Memoized filtered items
   const filteredItems = useMemo(() => {
-    return items.filter((item) =>
-      item.fname.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-  }, [items, searchTerm]);
+    return items.filter((item) => {
+      const matchesSearch = item.fname.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesCategory = selectedCategory === 'All' || item.catname === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [items, searchTerm, selectedCategory]);
+
 
   // Memoized cart quantity
   const getQuantity = useCallback((fid) => {
@@ -281,6 +288,35 @@ export default function Menu() {
         <Typography variant="h4" align="center" sx={{ mb: 4, fontWeight: 700 }}>
           Explore our Menu
         </Typography>
+        
+
+
+
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 1,
+        justifyContent: 'center',
+        mb: 2,
+      }}
+    >
+      {categories.map((cat) => (
+        <Chip
+          key={cat}
+          label={cat}
+          onClick={() => setSelectedCategory(cat)}
+          clickable
+          color={selectedCategory === cat ? 'primary' : 'default'}
+          variant={selectedCategory === cat ? 'filled' : 'outlined'}
+          sx={{
+            bgcolor: selectedCategory === cat ? 'primary.main' : 'transparent',
+            color: selectedCategory === cat ? '#000' : '#ccc',
+            borderColor: '#555',
+          }}
+        />
+      ))}
+    </Box>
 
         {/* Search with debouncing */}
         <Box sx={{ maxWidth: 400, mx: 'auto', mb: 4 }}>
