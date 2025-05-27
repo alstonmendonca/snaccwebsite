@@ -9,7 +9,6 @@ const dns = require('dns').promises;
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
 const { setSocket, getSocket } = require('./electronSocket');
-const dns = require('dns').promises;
 const app = express();
 const WebSocket = require('ws');
 
