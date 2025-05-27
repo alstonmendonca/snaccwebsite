@@ -357,6 +357,9 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
     });
 
     const savedOrder = await newOrder.save();
+    // Clear the user's cart
+    user.cart = [];
+    await user.save(); // Persist cart clearing
 
     // Queue it for WebSocket delivery
     queueOrder({
