@@ -8,7 +8,7 @@ const FoodItem = require('../models/FoodItem');
 const { getSocket } = require('../electronSocket');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const authenticateToken = require('../middleware/auth');
-
+const { queueOrder } = require('../webSocketManager');
 // --- Signup ---
 router.post('/signup', async (req, res) => {
   const { name, email, password, mobile } = req.body;
@@ -308,8 +308,9 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
   }
 });
 
+const { queueOrder } = require('../webSocketManager');
+
 router.post('/orders/place', async (req, res) => {
-  const socket = getSocket();
   const { name, phone, cartItems, datetime, paymentId } = req.body;
 
   const orderData = {
@@ -322,18 +323,20 @@ router.post('/orders/place', async (req, res) => {
   };
 
   try {
-    if (socket && socket.readyState === 1) {
-      socket.send(JSON.stringify({ event: 'newOrder', data: orderData }));
-      return res.status(200).json({ success: true, message: 'Order placed and sent to tunnel' });
-    } else {
-      console.warn('WebSocket not connected');
-      return res.status(503).json({ success: false, message: 'WebSocket not connected' });
-    }
+    queueOrder(orderData);
+    return res.status(200).json({
+      success: true,
+      message: 'Order placed and will be sent to tunnel when ready'
+    });
   } catch (err) {
-    console.error('Error sending order:', err);
-    return res.status(500).json({ success: false, message: 'Failed to place order' });
+    console.error('Error queueing order:', err);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to queue order'
+    });
   }
 });
+
 
 
 module.exports = router;

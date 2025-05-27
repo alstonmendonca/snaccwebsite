@@ -9,7 +9,9 @@ import {
   TextField,
   Stack,
   Divider,
-  Paper
+  Paper,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import dayjs from 'dayjs';
 import axios from 'axios';
@@ -25,6 +27,10 @@ export default function Checkout() {
   const [phone, setPhone] = useState('');
   const [paymentId, setPaymentId] = useState('');
   const [qrCodeUrl, setQrCodeUrl] = useState('/assets/PaymentQR.jpg'); // Replace with your image path
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMsg, setSnackbarMsg] = useState('');
+  const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' or 'error'
+
   const navigate = useNavigate();
     useEffect(() => {
         if (user) {
@@ -32,26 +38,41 @@ export default function Checkout() {
         setPhone(user.mobile || "");
         }
     }, [user]);
-  const handleSubmit = async () => {
-    const payload = {
-      name,
-      phone,
-      cartItems,
-      datetime: dayjs().format(),
-      paymentId: paymentMethod === 'online' ? paymentId : null,
+    const handleSnackbarClose = (event, reason) => {
+    if (reason === 'clickaway') return;
+    setSnackbarOpen(false);
+    };
+    const handleSubmit = async () => {
+        const payload = {
+            name,
+            phone,
+            cartItems,
+            datetime: dayjs().format(),
+            paymentId: paymentMethod === 'online' ? paymentId : null,
+        };
+
+        try {
+            await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+            });
+
+            setSnackbarMsg('Order placed successfully!');
+            setSnackbarSeverity('success');
+            setSnackbarOpen(true);
+
+            setTimeout(() => {
+            navigate('/orders');
+            }, 1500);
+
+        } catch (err) {
+            setSnackbarMsg('Failed to place order. Please try again.');
+            setSnackbarSeverity('error');
+            setSnackbarOpen(true);
+            console.error(err);
+        }
     };
 
-    try {
-      await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-      });
-      alert('Order placed successfully!');
-      navigate('/orders');
-    } catch (err) {
-      alert('Failed to place order. Please try again.');
-      console.error(err);
-    }
-  };
+
 
   return (
     <Box sx={{ maxWidth: 600, mx: 'auto', p: 3 }}>
@@ -165,6 +186,17 @@ export default function Checkout() {
           Confirm Order
         </Button>
       </Stack>
+    <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={4000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        >
+        <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
+            {snackbarMsg}
+        </Alert>
+    </Snackbar>
+
     </Box>
   );
 }
