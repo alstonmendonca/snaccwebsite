@@ -1,77 +1,139 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const helmet = require('helmet');
+const morgan = require('morgan');
+const rateLimit = require('express-rate-limit');
 require('dotenv').config({ path: './backend/.env' });
 
-const FoodItem = require('./models/FoodItem'); // import model
+const FoodItem = require('./models/FoodItem');
+const userRoutes = require('./routes/user');
 
 const app = express();
-const userRoutes = require('./routes/user'); // ✅ Import the user route
-// Middleware
+
+// ======================
+// Security Middleware
+// ======================
+app.use(helmet());
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10kb' }));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGO_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('✅ Connected to MongoDB'))
-.catch((err) => console.error('❌ MongoDB connection error:', err));
-
-// Sample route
-app.get('/', (req, res) => {
-  res.send('Server is running');
+// ======================
+// Rate Limiting
+// ======================
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
 });
+app.use(limiter);
 
-// ✅ GET /fooditems — Fetch all food items
-// ✅ GET /fooditems — Fetch food items with category name
-app.get('/fooditems', async (req, res) => {
-  try {
-    const items = await FoodItem.aggregate([
-      {
-        $lookup: {
-          from: 'Category',              // name of the category collection
-          localField: 'category',        // FoodItem.category
-          foreignField: 'catid',         // Category.catid
-          as: 'category_info'
-        }
-      },
-      {
-        $unwind: {
-          path: '$category_info',
-          preserveNullAndEmptyArrays: true
-        }
-      },
-      {
-        $project: {
-          fid: 1,
-          fname: 1,
-          category: 1,
-          catname: '$category_info.catname', // add catname directly
-          cost: 1,
-          sgst: 1,
-          cgst: 1,
-          tax: 1,
-          active: 1,
-          is_on: 1,
-          veg: 1,
-          depend_inv: 1,
-          createdAt: 1,
-          updatedAt: 1
-        }
-      }
-    ]);
+// ======================
+// Request Logging
+// ======================
+app.use(morgan('dev'));
 
-    res.json(items);
-  } catch (err) {
-    res.status(500).json({ message: 'Server error', error: err.message });
-  }
-});
+// ======================
+// Environment Validation
+// ======================
+if (!process.env.MONGO_URI) {
+  console.error('❌ MONGO_URI is not defined');
+  process.exit(1);
+}
 
-app.use('/users', userRoutes); // ✅ Mount the user route at /users
-// Start server
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`🚀 Server listening on port ${PORT}`);
-});
+// ======================
+// Database Connection
+// ======================
+mongoose.connect(process.env.MONGO_URI)
+  .then(() => {
+    console.log('✅ Connected to MongoDB');
+    startServer();
+  })
+  .catch((err) => {
+    console.error('❌ MongoDB connection error:', err);
+    process.exit(1);
+  });
+
+function startServer() {
+  // ======================
+  // Existing Routes (unchanged)
+  // ======================
+  app.get('/', (req, res) => {
+    res.send('Server is running');
+  });
+
+  app.use('/users', userRoutes);
+
+  // ======================
+  // Original Fooditems Route
+  // ======================
+  app.get('/fooditems', async (req, res, next) => {
+    try {
+      const items = await FoodItem.aggregate([
+        {
+          $lookup: {
+            from: 'Category',
+            localField: 'category',
+            foreignField: 'catid',
+            as: 'category_info'
+          }
+        },
+        {
+          $unwind: {
+            path: '$category_info',
+            preserveNullAndEmptyArrays: true
+          }
+        },
+        {
+          $project: {
+            fid: 1,
+            fname: 1,
+            category: 1,
+            catname: '$category_info.catname',
+            cost: 1,
+            sgst: 1,
+            cgst: 1,
+            tax: 1,
+            active: 1,
+            is_on: 1,
+            veg: 1,
+            depend_inv: 1,
+            createdAt: 1,
+            updatedAt: 1
+          }
+        }
+      ]);
+
+      res.json(items);
+    } catch (err) {
+      next(err);
+    }
+  });
+
+  // ======================
+  // Error Handling Middleware
+  // ======================
+  app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong!'
+    });
+  });
+
+  // ======================
+  // Unhandled Rejections
+  // ======================
+  process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  });
+
+  // ======================
+  // Server Start
+  // ======================
+  const PORT = process.env.PORT || 5000;
+  app.listen(PORT, () => {
+    console.log(`🚀 Server listening on port ${PORT}`);
+  });
+}

@@ -65,53 +65,48 @@ export default function SignIn() {
     }
   }, [location.state]);
 
-  const handleSignIn = async ({ email, password }) => {
-    setLoading(true);
-    try {
-      const res = await axios.post(
-        `${process.env.REACT_APP_API_URL}/users/signin`,
-        { email, password },
-        { timeout: 10000 } // Add timeout to prevent hanging
-      );
+const handleSignIn = async ({ email, password }) => {
+  setLoading(true);
+  try {
+    const res = await axios.post(
+      `${process.env.REACT_APP_API_URL}/users/signin`,
+      { email, password },
+      { timeout: 10000 }
+    );
 
-      const { token, user } = res.data;
+    const { token, user } = res.data;
 
-      // Store token and user data
-      localStorage.setItem("token", token);
-      localStorage.setItem("user", JSON.stringify(user));
+    // Just call login, it will store token, user and set timeout
+    login(token, user);
 
-      // Update auth context
-      login(token, user);
+    setSnackbar({
+      open: true,
+      message: "Sign in successful! Redirecting...",
+      severity: "success",
+    });
 
-      // Show success message
-      setSnackbar({
-        open: true,
-        message: "Sign in successful! Redirecting...",
-        severity: "success",
-      });
+    setTimeout(() => {
+      navigate(location.state?.from || "/");
+    }, 1500);
+  } catch (err) {
+    let errorMessage = "Sign in failed. Please try again.";
 
-      // Redirect after short delay for better UX
-      setTimeout(() => {
-        navigate(location.state?.from || "/");
-      }, 1500);
-    } catch (err) {
-      let errorMessage = "Sign in failed. Please try again.";
-      
-      if (err.response) {
-        errorMessage = err.response.data.error || errorMessage;
-      } else if (err.request) {
-        errorMessage = "Network error. Please check your connection.";
-      }
-
-      setSnackbar({
-        open: true,
-        message: errorMessage,
-        severity: "error",
-      });
-    } finally {
-      setLoading(false);
+    if (err.response) {
+      errorMessage = err.response.data.error || errorMessage;
+    } else if (err.request) {
+      errorMessage = "Network error. Please check your connection.";
     }
-  };
+
+    setSnackbar({
+      open: true,
+      message: errorMessage,
+      severity: "error",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const handleCloseSnackbar = () => {
     setSnackbar({ ...snackbar, open: false });
