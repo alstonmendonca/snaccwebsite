@@ -1,74 +1,135 @@
 import React from 'react';
-import { Box, Typography, Container, Divider, Button } from '@mui/material';
+import { Box, Typography, Button, Container, Grid, useTheme, useMediaQuery, Fade } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRightAlt, LocalBar, Coffee, Restaurant, Fastfood, Savings, Blender } from '@mui/icons-material';
+import { keyframes } from '@mui/system';
+import FeatureScroll from '../components/FeatureScroll';
+import BottomRatings from '../components/BottomRatings';
+const float = keyframes`
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-20px); }
+  100% { transform: translateY(0px); }
+`;
 
 export default function Home() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   return (
+    <Box sx={{
+      minHeight: '100vh',
+      background: `
+        linear-gradient(45deg, 
+          rgba(0,0,0,0.95) 0%, 
+          rgba(18,18,18,0.98) 100%),
+        url('https://images.unsplash.com/photo-1554118811-1e0d58224d24?q=80&w=2894&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+      `,
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      color: '#fff',
+      py: 10,
+      px: 2,
+    }}>
+      <Container maxWidth="xl">
+        <Grid container spacing={6} alignItems="center">
+          {/* Hero Section */}
+<Grid
+  item
+  xs={12}
+  md={6}
+  sx={{
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    textAlign: { xs: 'center', md: 'left' },
+    px: { xs: 2, md: 0 },
+  }}
+>
+  <Fade in timeout={800}>
     <Box
       sx={{
-        minHeight: '100vh',
-        backgroundImage: `url('https://images.pexels.com/photos/1640773/pexels-photo-1640773.jpeg?cs=srgb&dl=pexels-ella-olsson-572949-1640773.jpg&fm=jpg')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
+        maxWidth: 500,
+        width: '100%',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        px: 2,
-        py: 6,
-        color: '#fff',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundColor: 'rgba(0, 0, 0, 0.6)',
-          zIndex: 1,
-        },
+        flexDirection: 'column',
+        alignItems: { xs: 'center', md: 'flex-start' },
+        gap: 3,
+        mb: 10,
+        px: { xs: 0, md: 6 },
+        pr: { xs: 0, md: 10 },
       }}
     >
-      <Container maxWidth="md" sx={{ position: 'relative', zIndex: 2, textAlign: 'center' }}>
-        <Typography variant="h3" component="h1" gutterBottom sx={{ fontWeight: 700 }}>
-          Welcome to Lassi Corner
-        </Typography>
+      <Typography
+        variant="h1"
+        sx={{
+          fontWeight: 900,
+          fontSize: isMobile ? '3rem' : '4.5rem',
+          lineHeight: 1.1,
+          mb: 1,
+          textTransform: 'uppercase',
+          background: 'linear-gradient(45deg, #ffffff 35%, #aaaaaa 85%)',
+          WebkitBackgroundClip: 'text',
+          WebkitTextFillColor: 'transparent',
+          textShadow: '0 0 8px rgba(255, 255, 255, 0.6)',
+        }}
+      >
+        Lassi Corner
+      </Typography>
 
-        <Typography variant="h5" component="h2" color="rgba(255,255,255,0.8)" gutterBottom>
-          Your favorite spot for chill vibes & cool sips — right here in Vamanjoor.
-        </Typography>
+      <Typography
+        variant="subtitle1"
+        sx={{
+          fontSize: '1.25rem',
+          lineHeight: 1.6,
+          color: 'rgba(255,255,255,0.9)',
+          maxWidth: 420,
+          textShadow: '0 0 5px rgba(0,0,0,0.4)',
+        }}
+      >
+        Order right from your classroom or office. <br />
+        Take a break, buy a sandwich.
+      </Typography>
 
-        <Divider sx={{ my: 4, backgroundColor: 'rgba(255,255,255,0.3)' }} />
+      <Button
+        variant="contained"
+        color="inherit"
+        endIcon={<ArrowRightAlt />}
+        onClick={() => navigate('/menu')}
+        sx={{
+          px: 6,
+          py: 2.2,
+          borderRadius: '50px',
+          fontWeight: 700,
+          fontSize: '1.1rem',
+          color: '#000',
+          bgcolor: '#fff',
+          boxShadow: '0 4px 10px rgba(255,255,255,0.6)',
+          '&:hover': {
+            bgcolor: '#f5f5f5',
+            transform: 'translateY(-2px)',
+            boxShadow: '0 6px 14px rgba(255,255,255,0.8)',
+          },
+          transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          alignSelf: { xs: 'center', md: 'flex-start' },
+        }}
+      >
+        Explore Menu
+      </Button>
+    </Box>
+  </Fade>
+</Grid>
 
-        <Typography variant="body1" sx={{ fontSize: '1.125rem', lineHeight: 1.8 }}>
-          Nestled in the heart of Vamanjoor, Lassi Corner is more than just a café — it’s a cozy
-          community hub where tradition meets taste. We specialize in handcrafted lassis,
-          milkshakes, and fusion snacks that bring a refreshing twist to your day.
-        </Typography>
 
-        <Typography variant="body1" sx={{ mt: 3, fontSize: '1.125rem', lineHeight: 1.8 }}>
-          Whether you're looking for a quiet place to relax, catch up with friends, or cool off
-          after a hot day, our doors are always open. Come experience authentic flavors,
-          comfortable ambiance, and the warm hospitality that makes Lassi Corner a Vamanjoor
-          favorite.
-        </Typography>
+          {/* Feature Icons */}
+          <Grid item xs={12} md={6}>
+            <FeatureScroll />
+          </Grid>
+        </Grid>
 
-        <Button
-          variant="contained"
-          color="warning"
-          size="large"
-          sx={{ mt: 5, px: 4, py: 1.5, borderRadius: '30px', fontWeight: 'bold', color: '#fff', backgroundColor: '#000',
-            '&:hover': {
-              backgroundColor: '#302c2b', // darker shade for hover
-            }, 
-          }}
-          onClick={() => navigate('/menu')}
-        >
-          Explore Our Menu
-        </Button>
+        {/* Stats Section */}
+        <BottomRatings />
       </Container>
     </Box>
   );
