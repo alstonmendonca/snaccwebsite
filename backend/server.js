@@ -5,7 +5,7 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 require('dotenv').config({ path: './backend/.env' });
-
+const dns = require('dns').promises;
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
 
@@ -134,6 +134,20 @@ function startServer() {
   // ======================
   // Cloudflare Tunnel WebSocket
   // ======================
+
+async function waitForDns(hostname, retries = 10, delayMs = 1000) {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await dns.lookup(hostname);
+      return true;
+    } catch {
+      console.log(`DNS lookup failed for ${hostname}, retrying... (${i + 1}/${retries})`);
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+  throw new Error(`DNS lookup failed for ${hostname} after ${retries} retries`);
+}
+
 app.post('/api/register-electron-tunnel', async (req, res) => {
   const { wsUrl } = req.body;
   console.log('Received Electron WebSocket URL:', wsUrl);
@@ -141,9 +155,13 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
   if (electronSocket) {
     console.log('Closing previous Electron WebSocket connection');
     electronSocket.close();
+    electronSocket = null;
   }
 
   try {
+    const hostname = new URL(wsUrl).hostname;
+    await waitForDns(hostname);
+
     const ws = new WebSocket(wsUrl);
 
     ws.on('open', () => {
@@ -165,7 +183,6 @@ app.post('/api/register-electron-tunnel', async (req, res) => {
       console.error('WebSocket error:', err.message);
     });
 
-    // Respond immediately — connection is async
     res.status(200).json({ status: 'WebSocket connection initiated' });
   } catch (error) {
     console.error('Failed to connect WebSocket:', error.message);
