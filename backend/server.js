@@ -135,7 +135,7 @@ function startServer() {
   // Cloudflare Tunnel WebSocket
   // ======================
 
-async function waitForDns(hostname, retries = 10, delayMs = 3000) {
+async function waitForDns(hostname, retries = 10, delayMs = 1000) {
   for (let i = 0; i < retries; i++) {
     try {
       await dns.lookup(hostname);
