@@ -9,10 +9,9 @@ require('dotenv').config({ path: path.resolve(__dirname, '.env') });
 const dns = require('dns').promises;
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
-const { setSocket, getSocket } = require('./electronSocket');
 const app = express();
 const WebSocket = require('ws');
-const { setSocket } = require('./webSocketManager'); // Adjust path as needed
+const { setSocket, getSocket } = require('./webSocketManager'); // Adjust path as needed
 
 // ======================
 // Security Middleware
