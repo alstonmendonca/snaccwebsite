@@ -30,7 +30,7 @@ export default function Checkout() {
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMsg, setSnackbarMsg] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState('success'); // 'success' or 'error'
-
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
     useEffect(() => {
         if (user) {
@@ -42,7 +42,8 @@ export default function Checkout() {
     if (reason === 'clickaway') return;
     setSnackbarOpen(false);
     };
-    const handleSubmit = async () => {
+  const handleSubmit = async () => {
+    setLoading(true);
     const payload = {
       name,
       phone,
@@ -50,29 +51,30 @@ export default function Checkout() {
       datetime: dayjs().format(),
       paymentId: paymentMethod === 'online' ? paymentId : null,
       paymentMethod,
-      totalPrice, // <-- this is what you're missing
+      totalPrice,
     };
 
-        try {
-            await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-            });
+    try {
+      await axios.post(`${process.env.REACT_APP_API_URL}/users/orders/place`, payload, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      });
 
-            setSnackbarMsg('Order placed successfully!');
-            setSnackbarSeverity('success');
-            setSnackbarOpen(true);
+      setSnackbarMsg('Order placed successfully!');
+      setSnackbarSeverity('success');
+      setSnackbarOpen(true);
 
-            setTimeout(() => {
-            navigate('/orders');
-            }, 1500);
-
-        } catch (err) {
-            setSnackbarMsg('Failed to place order. Please try again.');
-            setSnackbarSeverity('error');
-            setSnackbarOpen(true);
-            console.error(err);
-        }
-    };
+      setTimeout(() => {
+        navigate('/orders');
+      }, 1500);
+    } catch (err) {
+      setSnackbarMsg('Failed to place order. Please try again.');
+      setSnackbarSeverity('error');
+      setSnackbarOpen(true);
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
 
@@ -183,10 +185,12 @@ export default function Checkout() {
           variant="contained"
           size="large"
           onClick={handleSubmit}
-          disabled={!name || !phone || (paymentMethod === 'online' && !paymentId)}
+          disabled={loading || !name || !phone || (paymentMethod === 'online' && !paymentId)}
+          startIcon={loading && <CircularProgress size={20} color="inherit" />}
         >
-          Confirm Order
+          {loading ? 'Placing Order...' : 'Confirm Order'}
         </Button>
+
       </Stack>
     <Snackbar
         open={snackbarOpen}
