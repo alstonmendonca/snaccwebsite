@@ -36,7 +36,20 @@ export default function Cart() {
   const totalPrice = useMemo(() => (
     cartItems.reduce((sum, item) => sum + item.cost * (localChanges[item.fid]?.quantity || item.quantity), 0)
   ), [cartItems, localChanges]);
+  const handleCheckout = () => {
+  // Prepare cart items with the latest quantities (from localChanges if any)
+  const itemsWithUpdatedQty = cartItems.map(item => ({
+    ...item,
+    quantity: localChanges[item.fid]?.quantity ?? item.quantity,
+  }));
 
+  navigate('/checkout', {
+      state: {
+        cartItems: itemsWithUpdatedQty,
+        totalPrice,
+      }
+    });
+  };
   // Fetch cart details with error handling and retry logic
   const fetchCartDetails = useCallback(async () => {
     try {
@@ -370,7 +383,7 @@ export default function Cart() {
               <Button
                 variant="contained"
                 size="large"
-                onClick={() => navigate('/checkout')}
+                onClick={handleCheckout}
                 disabled={isProcessing || cartItems.length === 0}
                 sx={{
                   mt: 2,
