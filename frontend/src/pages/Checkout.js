@@ -34,6 +34,9 @@ export default function Checkout() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false); // ← Add this
   const navigate = useNavigate();
+  const location = useLocation();
+  const websocketConnected = location.state?.websocketConnected ?? false;
+
     useEffect(() => {
         if (user) {
         setName(user.name || "");    // Adjust field names based on your user object shape
@@ -107,9 +110,29 @@ export default function Checkout() {
           value={paymentMethod}
           onChange={(e) => setPaymentMethod(e.target.value)}
         >
-          <FormControlLabel value="online" control={<Radio />} label="Pay Online via UPI" />
-          <FormControlLabel value="cafe" control={<Radio />} label="Pay at Cafe" />
+          <FormControlLabel
+            value="online"
+            control={<Radio />}
+            label="Pay Online via UPI"
+            disabled={!websocketConnected}
+          />
+          <FormControlLabel
+            value="cafe"
+            control={<Radio />}
+            label="Pay at Cafe"
+          />
         </RadioGroup>
+
+        {!websocketConnected && (
+          <Typography
+            variant="body2"
+            color="error"
+            sx={{ mt: 1, ml: 2 }}
+          >
+            Cafe cannot accept online payments at this time. Please pay at the cafe.
+          </Typography>
+        )}
+
 
         {paymentMethod === 'online' && (
           <Paper elevation={3} sx={{ p: 2, mt: 1 }}>

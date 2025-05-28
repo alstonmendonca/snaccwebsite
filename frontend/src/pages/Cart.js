@@ -31,6 +31,7 @@ export default function Cart() {
   const [localChanges, setLocalChanges] = useState({});
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
+  const [websocketConnected, setWebsocketConnected] = useState(false);
 
   // Memoized total price calculation
   const totalPrice = useMemo(() => (
@@ -58,8 +59,9 @@ export default function Cart() {
         headers: { Authorization: `Bearer ${token}` },
         timeout: 5000
       });
-      setCartItems(res.data);
-      setLocalChanges({});
+      setCartItems(res.data.cart || []);
+      setWebsocketConnected(res.data.websocketConnected || false);
+
     } catch (err) {
       console.error('Cart fetch error:', err);
       if (err.response?.status === 401) {

@@ -8,7 +8,7 @@ const FoodItem = require('../models/FoodItem');
 const { getSocket } = require('../electronSocket');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const authenticateToken = require('../middleware/auth');
-const { queueOrder } = require('../webSocketManager');
+const { queueOrder, getSocket } = require('../webSocketManager');
 const Order = require('../models/Order');  // Your Mongoose order model
 // --- Signup ---
 router.post('/signup', async (req, res) => {
@@ -250,8 +250,17 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
     const user = req.user;
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // WebSocket health check
+    const ws = getSocket();
+    const isWebSocketConnected = ws && ws.readyState === 1;
+
     // If cart empty, return empty array early
-    if (!user.cart || user.cart.length === 0) return res.json([]);
+    if (!user.cart || user.cart.length === 0) {
+      return res.json({
+        websocketConnected: isWebSocketConnected,
+        cart: [],
+      });
+    }
 
     // Extract all fids from user.cart
     const fids = user.cart.map(item => item.fid);
@@ -261,24 +270,24 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
       { $match: { fid: { $in: fids } } },
       {
         $lookup: {
-          from: 'Category',            // category collection name
-          localField: 'category',      // FoodItem.category
-          foreignField: 'catid',       // Category.catid
-          as: 'category_info'
-        }
+          from: 'Category',
+          localField: 'category',
+          foreignField: 'catid',
+          as: 'category_info',
+        },
       },
       {
         $unwind: {
           path: '$category_info',
-          preserveNullAndEmptyArrays: true
-        }
+          preserveNullAndEmptyArrays: true,
+        },
       },
       {
         $project: {
           fid: 1,
           fname: 1,
           category: 1,
-          catname: '$category_info.catname', // join category name
+          catname: '$category_info.catname',
           cost: 1,
           sgst: 1,
           cgst: 1,
@@ -288,9 +297,9 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
           veg: 1,
           depend_inv: 1,
           createdAt: 1,
-          updatedAt: 1
-        }
-      }
+          updatedAt: 1,
+        },
+      },
     ]);
 
     // Merge quantity info from cart into the aggregated items
@@ -302,12 +311,16 @@ router.get('/cart/details', authenticateToken, async (req, res) => {
       };
     });
 
-    res.json(itemsWithQuantity);
+    res.json({
+      websocketConnected: isWebSocketConnected,
+      cart: itemsWithQuantity,
+    });
   } catch (err) {
     console.error('Error getting cart details:', err);
     res.status(500).json({ message: 'Server error', error: err.message });
   }
 });
+
 
 router.post('/orders/place', authenticateToken, async (req, res) => {
   const user = req.user;
