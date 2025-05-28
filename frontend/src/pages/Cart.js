@@ -48,6 +48,7 @@ export default function Cart() {
       state: {
         cartItems: itemsWithUpdatedQty,
         totalPrice,
+        websocketConnected, // <-- pass it forward
       }
     });
   };
