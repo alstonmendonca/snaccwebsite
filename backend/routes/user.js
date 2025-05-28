@@ -5,7 +5,6 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 require('dotenv').config();
 const FoodItem = require('../models/FoodItem');
-const { getSocket } = require('../electronSocket');
 const JWT_SECRET = process.env.JWT_SECRET || 'your_jwt_secret';
 const authenticateToken = require('../middleware/auth');
 const { queueOrder, getSocket } = require('../webSocketManager');
