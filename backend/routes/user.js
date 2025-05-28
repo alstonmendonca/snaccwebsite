@@ -349,6 +349,7 @@ router.post('/orders/place', authenticateToken, async (req, res) => {
       if (!food) throw new Error(`Food item with fid ${ci.fid} not found`);
       return {
         _id: food._id,
+        fid: food.fid,
         title: food.fname,
         quantity: ci.quantity,
         price: food.cost
