@@ -5,13 +5,20 @@ const helmet = require('helmet');
 const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const path = require('path');
+const http = require('http'); // ✅ Required for WebSocket server
+const WebSocket = require('ws');
 require('dotenv').config({ path: path.resolve(__dirname, '.env') });
-const dns = require('dns').promises;
+
 const FoodItem = require('./models/FoodItem');
 const userRoutes = require('./routes/user');
+const { setSocket, getSocket, queueOrder } = require('./webSocketManager'); // ✅ Added queueOrder
+
 const app = express();
-const WebSocket = require('ws');
-const { setSocket, getSocket } = require('./webSocketManager'); // Adjust path as needed
+const server = http.createServer(app); // ✅ Correct server used for WebSocket
+const wss = new WebSocket.Server({ server });
+
+// Store one persistent Electron connection
+let electronSocket = null;
 
 // ======================
 // Security Middleware
@@ -20,6 +27,7 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '10kb' }));
 app.set('trust proxy', 1);
+
 // ======================
 // Rate Limiting
 // ======================
@@ -32,12 +40,12 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // ======================
-// Request Logging
+// Logging
 // ======================
 app.use(morgan('dev'));
 
 // ======================
-// Environment Validation
+// Environment Check
 // ======================
 if (!process.env.MONGO_URI) {
   console.error('❌ MONGO_URI is not defined');
@@ -45,7 +53,7 @@ if (!process.env.MONGO_URI) {
 }
 
 // ======================
-// Database Connection
+// MongoDB Connection
 // ======================
 mongoose.connect(process.env.MONGO_URI)
   .then(() => {
@@ -57,19 +65,17 @@ mongoose.connect(process.env.MONGO_URI)
     process.exit(1);
   });
 
+// ======================
+// Start Server
+// ======================
 function startServer() {
-  // ======================
-  // Existing Routes (unchanged)
-  // ======================
+  // Routes
   app.get('/', (req, res) => {
     res.send('Server is running');
   });
 
   app.use('/users', userRoutes);
 
-  // ======================
-  // Original Fooditems Route
-  // ======================
   app.get('/fooditems', async (req, res, next) => {
     try {
       const items = await FoodItem.aggregate([
@@ -81,12 +87,7 @@ function startServer() {
             as: 'category_info'
           }
         },
-        {
-          $unwind: {
-            path: '$category_info',
-            preserveNullAndEmptyArrays: true
-          }
-        },
+        { $unwind: { path: '$category_info', preserveNullAndEmptyArrays: true } },
         {
           $project: {
             fid: 1,
@@ -106,16 +107,13 @@ function startServer() {
           }
         }
       ]);
-
       res.json(items);
     } catch (err) {
       next(err);
     }
   });
 
-  // ======================
-  // Error Handling Middleware
-  // ======================
+  // Error handling
   app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(500).json({
@@ -124,101 +122,35 @@ function startServer() {
     });
   });
 
-  // ======================
-  // Unhandled Rejections
-  // ======================
   process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled Rejection at:', promise, 'reason:', reason);
+    console.error('Unhandled Rejection:', reason);
   });
 
-  // ======================
-  // Cloudflare Tunnel WebSocket
-  // ======================
-async function createWebSocketWithIPv4(wsUrl) {
-  const urlObj = new URL(wsUrl);
-  const hostname = urlObj.hostname;
-  const port = urlObj.port || (urlObj.protocol === 'wss:' ? 443 : 80);
-  const protocol = urlObj.protocol.slice(0, -1); // 'ws' or 'wss'
+  // WebSocket connection handler
+  wss.on('connection', (ws, req) => {
+    console.log('Electron WebSocket connected from', req.socket.remoteAddress);
 
-  // Resolve hostname to IPv4 address explicitly
-  const { address: ip } = await dns.lookup(hostname, { family: 4 });
+    electronSocket = ws;
+    setSocket(ws); // Optional, if you're managing via socket manager
 
-  // Create WebSocket with IP but override Host header and TLS SNI
-  const ws = new WebSocket(`${protocol}://${ip}:${port}`, {
-    headers: {
-      Host: hostname
-    },
-    servername: hostname // for TLS SNI (needed for wss)
-  });
-
-  return ws;
-}
-async function waitForDns(hostname, maxRetries = 10, delayMs = 1000) {
-  let attempts = 0;
-  while (attempts < maxRetries) {
-    try {
-      await dns.lookup(hostname);
-      // If lookup succeeds, DNS is ready
-      return;
-    } catch (err) {
-      attempts++;
-      console.warn(`DNS lookup failed for ${hostname}. Retrying attempt ${attempts}/${maxRetries}...`);
-      await new Promise(res => setTimeout(res, delayMs));
-    }
-  }
-  throw new Error(`DNS lookup failed for ${hostname} after ${maxRetries} attempts`);
-}
-
-app.post('/api/register-electron-tunnel', async (req, res) => {
-  const { wsUrl } = req.body;
-  console.log('Received Electron WebSocket URL:', wsUrl);
-
-  if (!wsUrl || !wsUrl.startsWith('wss://')) {
-    return res.status(400).json({ error: 'Invalid WebSocket URL' });
-  }
-
-  // Close existing socket
-  const existingSocket = getSocket();
-  if (existingSocket) {
-    console.log('Closing existing WebSocket connection');
-    existingSocket.terminate(); // force close immediately
-  }
-
-  try {
-    const hostname = new URL(wsUrl).hostname;
-    await waitForDns(hostname);
-
-    const ws = await createWebSocketWithIPv4(wsUrl); // your function
-
-    ws.once('open', () => {
-      console.log('WebSocket tunnel connected');
-      setSocket(ws);
-      try {
-        ws.send('Hello from backend!');
-      } catch (err) {
-        console.error('Initial message send failed:', err.message);
-      }
-    });
-
-    // Also allow for logging messages if needed:
     ws.on('message', (msg) => {
       console.log('Message from Electron:', msg.toString());
     });
 
-    return res.status(200).json({ status: 'WebSocket connection established' });
-  } catch (error) {
-    console.error('Tunnel registration failed:', error.message);
-    return res.status(500).json({ error: 'Tunnel registration failed' });
-  }
-});
+    ws.on('close', () => {
+      console.warn('Electron WebSocket disconnected');
+      electronSocket = null;
+    });
 
+    ws.on('error', (err) => {
+      console.error('WebSocket error:', err.message);
+      electronSocket = null;
+    });
+  });
 
-
-  // ======================
-  // Server Start
-  // ======================
+  // Start combined HTTP + WebSocket server
   const PORT = process.env.PORT || 5000;
-  app.listen(PORT, () => {
+  server.listen(PORT, () => {
     console.log(`🚀 Server listening on port ${PORT}`);
   });
 }
