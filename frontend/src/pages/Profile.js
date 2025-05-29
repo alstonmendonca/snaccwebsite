@@ -199,48 +199,6 @@ export default function Profile() {
           name="address"
         />
         <Divider />
-
-        <Box sx={{ pt: 2 }}>
-          <Typography variant="h6" gutterBottom>
-            <EventNoteIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
-            Order History
-          </Typography>
-          {orders.length > 0 ? (
-            <Stack spacing={2}>
-              {orders.map((order) => (
-                <Box key={order._id} sx={{
-                  p: 2,
-                  borderRadius: 2,
-                  border: `1px solid ${theme.palette.divider}`
-                }}>
-                  <Stack direction="row" justifyContent="space-between" alignItems="center">
-                    <Typography variant="body1" fontWeight="500">
-                      Order ID: {order._id.slice(-6).toUpperCase()}
-                    </Typography>
-                    <Chip
-                      label={order.paymentMethod === 'online' ? 'Paid Online' : 'Pay at Cafe'}
-                      color={order.paymentMethod === 'online' ? 'success' : 'warning'}
-                      size="small"
-                    />
-                  </Stack>
-                  <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                    <LocalShippingIcon sx={{ fontSize: 16, mr: 1 }} />
-                    {order.cartItems?.length || 0} items — ₹{order.totalPrice}
-                  </Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {new Date(order.datetime).toLocaleString()}
-                  </Typography>
-                </Box>
-              ))}
-            </Stack>
-          ) : (
-            <Typography variant="body1" color="text.secondary">
-              No orders yet
-            </Typography>
-          )}
-        </Box>
-
-
         {editMode ? (
           <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} sx={{ mt: 4 }}>
             <Button
