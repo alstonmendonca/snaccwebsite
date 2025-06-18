@@ -161,7 +161,7 @@ export default function Orders() {
                   }}
                 />
                 <Chip
-                label={order.status === 1 ? 'COMPLETED' : 'PENDING'}
+                label={order.status === 1 ? 'COMPLETED' : order.status === 2 ? 'CANCELLED' : 'PENDING'}
                 size="small"
                 variant="outlined"
                 sx={{
@@ -171,7 +171,7 @@ export default function Orders() {
                     borderWidth: '1.5px',
                     color: order.status === 1 ? '#fff' : 'rgba(255,255,255,0.8)',
                     bgcolor: 'transparent',
-                    borderColor: order.status === 1 ? '#2e7d32' : 'rgba(255,255,255,0.4)',
+                    borderColor: order.status === 1 ? '#2e7d32' : order.status === 2 ? '#d32f2f' : 'rgba(255,255,255,0.4)',
                     ml: 1
                 }}
                 />
