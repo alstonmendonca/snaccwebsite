@@ -1,0 +1,11 @@
+{
+  "projectName": "lassicorner",
+  "meta": {
+    "type": "backend"
+  },
+  "backend": {
+    "platform": "node17"
+  },
+  "hash": "4d1a9277",
+  "domain": "lassicorner.mdbgo.io"
+}
