@@ -52,7 +52,6 @@ export default function FeatureScroll() {
     <Box sx={{ 
       overflow: 'hidden',
       width: '100%',
-      py: 2,
       WebkitOverflowScrolling: 'touch'
     }}>
       <Box

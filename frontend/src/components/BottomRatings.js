@@ -8,13 +8,13 @@ export default function BottomRatings() {
   const stats = [
     {
       icon: <MenuBook fontSize="large" sx={{ color: theme.palette.primary.main }} />,
-      value: '100+',
-      label: 'Unique Recipes',
+      value: '40+',
+      label: 'Menu Items',
     },
     {
       icon: <EmojiPeople fontSize="large" sx={{ color: theme.palette.primary.main }} />,
       value: '15k+',
-      label: 'Happy Customers',
+      label: 'Customers Served',
     },
     {
       icon: <Star fontSize="large" sx={{ color: '#FFD700' }} />,
@@ -31,7 +31,7 @@ export default function BottomRatings() {
   return (
     <Box
       sx={{
-        mt: 15,
+        mt: 2,
         px: { xs: 2, md: 10 },
         py: 8,
         bgcolor: 'rgba(255,255,255,0.07)',
