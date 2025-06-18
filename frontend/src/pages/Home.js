@@ -21,9 +21,9 @@ export default function Home() {
       minHeight: '100vh',
       background: `
         linear-gradient(45deg, 
-          rgba(0,0,0,0.95) 0%, 
-          rgba(18,18,18,0.98) 100%),
-        url('https://images.unsplash.com/photo-1554118811-1e0d58224d24?q=80&w=2894&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')
+          rgba(0,0,0,0.6) 0%, 
+          rgba(18,18,18,0.8) 100%),
+        url('/background.jpg')
       `,
       backgroundSize: 'cover',
       backgroundPosition: 'center',

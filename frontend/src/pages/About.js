@@ -25,22 +25,22 @@ export default function About() {
       }}
     >
       {/* Optimized Hero Image */}
-      <Box
-        component="img"
-        src="https://media-cdn.tripadvisor.com/media/photo-s/2c/86/d8/d8/brunch-californien-waffle.jpg"
-        alt="Lassi Corner"
-        loading="lazy"
-        sx={{
-          width: '100%',
-          height: { xs: 180, sm: 250 },
-          objectFit: 'cover',
-          objectPosition: 'center 70%',
-          borderRadius: 2,
-          mb: { xs: 2, sm: 3 },
-          filter: 'brightness(0.95)',
-          transform: 'translateZ(0)', // Hardware acceleration
-        }}
-      />
+  <Box
+    component="img"
+    src="/nuggets.png"
+    alt="Lassi Corner"
+    loading="lazy"
+    sx={{
+      width: '100%',
+      height: { xs: 180, sm: 250 },
+      objectFit: 'cover',
+      objectPosition: 'center 70%',
+      borderRadius: 2,
+      mb: { xs: 2, sm: 3 },
+      filter: 'brightness(0.95)',
+      transform: 'translateZ(0)', // Hardware acceleration
+    }}
+  />
 
       <Typography 
         variant="h4" 
