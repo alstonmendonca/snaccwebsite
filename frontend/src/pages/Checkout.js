@@ -23,7 +23,7 @@ export default function Checkout() {
   const { state } = useLocation();
   const cartItems = state?.cartItems || [];
   const totalPrice = state?.totalPrice || 0;
-  const [paymentMethod, setPaymentMethod] = useState('online');
+  const [paymentMethod, setPaymentMethod] = useState('cafe');
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [paymentId, setPaymentId] = useState('');

@@ -22,9 +22,9 @@ export default function BottomRatings() {
       label: 'Average Rating',
     },
     {
-      icon: <WorkspacePremium fontSize="large" sx={{ color: theme.palette.secondary.main }} />,
-      value: '5',
-      label: 'Award Winning',
+      icon: <WorkspacePremium fontSize="large" sx={{ color: theme.palette.primary.main }} />,
+      value: '3+',
+      label: 'Years of Service',
     },
   ];
 
