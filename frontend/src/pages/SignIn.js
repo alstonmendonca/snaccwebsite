@@ -86,7 +86,7 @@ const handleSignIn = async ({ email, password }) => {
     });
 
     setTimeout(() => {
-      navigate(location.state?.from || "/");
+      navigate(location.state?.from || "/menu");
     }, 1500);
   } catch (err) {
     let errorMessage = "Sign in failed. Please try again.";
