@@ -147,7 +147,7 @@ export default function Orders() {
                 </Stack>
 
                 <Chip
-                  label={order.paymentMethod === 'online' ? 'PAID ONLINE' : 'PAID OFFLINE'}
+                  label={order.paymentMethod === 'online' ? 'ONLINE' : 'OFFLINE'}
                   size="small"
                   variant="outlined"
                   sx={{
