@@ -31,16 +31,16 @@ export default function BottomRatings() {
   return (
     <Box
       sx={{
-        mt: 2,
+        mt: 0,
         px: { xs: 2, md: 10 },
-        py: 8,
+        py: 1.5,
         bgcolor: 'rgba(255,255,255,0.07)',
         borderRadius: 4,
         border: '1px solid rgba(255,255,255,0.15)',
         display: 'flex',
         justifyContent: 'space-around',
         flexWrap: 'wrap',
-        gap: 4,
+        gap: 2,
       }}
     >
       {stats.map(({ icon, value, label }, i) => (

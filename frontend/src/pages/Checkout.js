@@ -99,8 +99,16 @@ export default function Checkout() {
         <TextField
             label="Phone Number"
             value={phone}
-            onChange={(e) => setPhone(e.target.value)}
+            onChange={(e) => {
+                const val = e.target.value;
+                // Allow only digits, max length 10
+                if (/^\d{0,10}$/.test(val)) {
+                    setPhone(val);
+                }
+            }}
             required
+            inputProps={{ maxLength: 10 }}
+            helperText="Enter 10 digit phone number"
         />
 
         <Divider />

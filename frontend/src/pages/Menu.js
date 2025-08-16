@@ -317,21 +317,9 @@ export default function Menu() {
                    textShadow: '0 2px 4px rgba(0,0,0,0.3)',
                  }}
                >
-                 Our Menu
+                 Menu
                </Typography>
              </Box>
-             <Typography 
-               variant="h6" 
-               sx={{ 
-                 color: 'rgba(255,255,255,0.7)', 
-                 fontWeight: 400,
-                 maxWidth: 600,
-                 mx: 'auto',
-                 lineHeight: 1.6,
-               }}
-             >
-              Discover our carefully curated selection of delicious dishes, crafted with the finest ingredients
-            </Typography>
           </Box>
         </Fade>
 
