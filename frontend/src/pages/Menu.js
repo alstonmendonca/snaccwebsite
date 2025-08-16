@@ -18,50 +18,88 @@ import {
   Skeleton,
   Badge,
   Tooltip,
+  Container,
+  Grid,
+  Paper,
+  Fade,
+  Zoom,
 } from '@mui/material';
-import RestaurantMenuIcon from '@mui/icons-material/RestaurantMenu';
-import SearchIcon from '@mui/icons-material/Search';
-import AddIcon from '@mui/icons-material/Add';
-import RemoveIcon from '@mui/icons-material/Remove';
-import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
-import { motion } from 'framer-motion';
+import {
+  RestaurantMenu as RestaurantMenuIcon,
+  Search as SearchIcon,
+  Add as AddIcon,
+  Remove as RemoveIcon,
+  ShoppingCart as ShoppingCartIcon,
+  LocalDining as DiningIcon,
+  Star as StarIcon,
+  Favorite as FavoriteIcon,
+  FilterList as FilterIcon,
+  Clear as ClearIcon,
+  TrendingUp as TrendingIcon,
+  Timer as TimerIcon,
+} from '@mui/icons-material';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import debounce from 'lodash.debounce';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL;
 
+// Enhanced card variants with better animations
 const cardVariants = {
-  hidden: { opacity: 0, y: 20 },
+  hidden: { opacity: 0, y: 30, scale: 0.95 },
   visible: (i) => ({
     opacity: 1,
     y: 0,
+    scale: 1,
     transition: {
-      delay: i * 0.08,
-      duration: 0.4,
-      ease: 'easeOut',
+      delay: i * 0.1,
+      duration: 0.6,
+      ease: [0.25, 0.46, 0.45, 0.94],
     },
   }),
+  hover: {
+    y: -8,
+    scale: 1.02,
+    transition: {
+      duration: 0.3,
+      ease: 'easeOut',
+    },
+  },
+  tap: {
+    scale: 0.98,
+    transition: {
+      duration: 0.1,
+    },
+  },
 };
 
-// Skeleton loader component
+// Enhanced skeleton loader
 const MenuItemSkeleton = () => (
-  <Card sx={{ 
-    backgroundColor: '#111', 
-    borderRadius: 3,
-    height: 320, // Fixed height
-    display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'space-between'
-  }}>
-    <CardContent sx={{ flexGrow: 1 }}>
-      <Skeleton variant="text" width="60%" height={30} sx={{ mx: 'auto' }} />
-      <Skeleton variant="text" width="40%" height={20} sx={{ mx: 'auto', my: 1 }} />
-      <Skeleton variant="rectangular" width="30%" height={24} sx={{ mx: 'auto', my: 1, borderRadius: 1 }} />
-      <Divider sx={{ my: 2, borderColor: '#333', width: '80%', mx: 'auto' }} />
-      <Skeleton variant="text" width="70%" height={16} sx={{ mx: 'auto' }} />
+  <Card
+    sx={{
+      background: '#1e1e1e',
+      border: '1px solid rgba(255,255,255,0.1)',
+      borderRadius: 4,
+      height: 320,
+      width: '100%',
+      maxWidth: '280px',
+      mx: 'auto',
+      display: 'flex',
+      flexDirection: 'column',
+      justifyContent: 'space-between',
+      overflow: 'hidden',
+      boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+    }}
+  >
+    <CardContent sx={{ flexGrow: 1, p: 3 }}>
+      <Skeleton variant="text" width="70%" height={28} sx={{ mx: 'auto', mb: 1 }} />
+      <Skeleton variant="text" width="40%" height={24} sx={{ mx: 'auto', mb: 2 }} />
+      <Skeleton variant="rectangular" width="60%" height={24} sx={{ mx: 'auto', mb: 2, borderRadius: 2 }} />
+      <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)', width: '80%', mx: 'auto' }} />
+      <Skeleton variant="text" width="80%" height={16} sx={{ mx: 'auto' }} />
     </CardContent>
-    <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
-      <Skeleton variant="rectangular" width="80%" height={36} sx={{ borderRadius: 2 }} />
+    <CardActions sx={{ justifyContent: 'center', pb: 3, px: 3 }}>
+      <Skeleton variant="rectangular" width="100%" height={44} sx={{ borderRadius: 3 }} />
     </CardActions>
   </Card>
 );
@@ -143,7 +181,6 @@ export default function Menu() {
       return matchesSearch && matchesCategory;
     });
   }, [items, searchTerm, selectedCategory]);
-
 
   // Memoized cart quantity
   const getQuantity = useCallback((fid) => {
@@ -257,373 +294,545 @@ export default function Menu() {
     <Box
       sx={{
         position: 'relative',
-        px: { xs: 1, sm: 2 },
-        pt: 4,
-        pb: 10,
         minHeight: '100vh',
         color: '#fff',
-        backgroundImage: "linear-gradient(rgba(0, 0, 0, 0.7), url('https://images.unsplash.com/photo-1553025934-296397db4010?q=80&w=2674&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')",
+        backgroundColor: '#121212',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat',
         backgroundAttachment: 'fixed',
       }}
     >
-      {/* Error display */}
-      {error && (
-        <Box sx={{ textAlign: 'center', my: 2 }}>
-          <Typography color="error">{error}</Typography>
-          <Button 
-            variant="outlined" 
-            color="error" 
-            onClick={fetchMenuItems}
-            sx={{ mt: 1 }}
-          >
-            Retry
-          </Button>
-        </Box>
-      )}
-
-      <Box sx={{ position: 'relative', zIndex: 1 }}>
-        <Typography variant="h4" align="center" sx={{ mb: 4, fontWeight: 700 }}>
-          Explore our Menu
-        </Typography>
-        
-
-
-
-    <Box
-      sx={{
-        display: 'flex',
-        flexWrap: 'wrap',
-        gap: 1,
-        justifyContent: 'center',
-        mb: 2,
-      }}
-    >
-      {categories.map((cat) => (
-        <Chip
-          key={cat}
-          label={cat}
-          onClick={() => setSelectedCategory(cat)}
-          clickable
-          color={selectedCategory === cat ? 'primary' : 'default'}
-          variant={selectedCategory === cat ? 'filled' : 'outlined'}
-          sx={{
-            bgcolor: selectedCategory === cat ? 'primary.main' : 'transparent',
-            color: selectedCategory === cat ? '#000' : '#ccc',
-            borderColor: '#555',
-          }}
-        />
-      ))}
-    </Box>
-
-        {/* Search with debouncing */}
-        <Box sx={{ maxWidth: 400, mx: 'auto', mb: 4 }}>
-          <TextField
-            fullWidth
-            variant="filled"
-            placeholder="Search menu items..."
-            defaultValue={searchTerm}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon sx={{ fontSize: 27, color: 'rgba(255,255,255,0.7)' }} />
-                </InputAdornment>
-              ),
-              disableUnderline: true,
-              sx: {
-                bgcolor: 'rgba(255,255,255,0.1)',
-                borderRadius: 2,
-                color: '#fff',
-                '& .MuiInputBase-input': {
-                  color: '#fff',
-                  fontWeight: 500,
-                  fontSize: '0.875rem',
-                },
-                '&:hover': {
-                  bgcolor: 'rgba(255,255,255,0.15)',
-                },
-                '&.Mui-focused': {
-                  bgcolor: 'rgba(255,255,255,0.2)',
-                },
-              },
-            }}
-          />
-        </Box>
-
-        {/* Loading state with skeleton loaders */}
-        {loading ? (
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(auto-fill, minmax(90vw, 1fr))',
-                sm: 'repeat(auto-fill, minmax(200px, 1fr))',
-                md: 'repeat(auto-fill, minmax(240px, 1fr))',
-              },
-              gap: 2,
-              pb: 2,
-            }}
-          >
-            {Array.from({ length: 6 }).map((_, index) => (
-              <MenuItemSkeleton key={index} />
-            ))}
+      <Container maxWidth="xl" sx={{ position: 'relative', zIndex: 1, pt: 4, pb: 12 }}>
+        {/* Header Section */}
+        <Fade in timeout={800}>
+          <Box sx={{ textAlign: 'center', mb: 6 }}>
+                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 2 }}>
+               <DiningIcon sx={{ fontSize: 48, color: '#fff', mr: 2 }} />
+               <Typography 
+                 variant="h3" 
+                 sx={{ 
+                   fontWeight: 800,
+                   color: '#fff',
+                   textShadow: '0 2px 4px rgba(0,0,0,0.3)',
+                 }}
+               >
+                 Our Menu
+               </Typography>
+             </Box>
+             <Typography 
+               variant="h6" 
+               sx={{ 
+                 color: 'rgba(255,255,255,0.7)', 
+                 fontWeight: 400,
+                 maxWidth: 600,
+                 mx: 'auto',
+                 lineHeight: 1.6,
+               }}
+             >
+              Discover our carefully curated selection of delicious dishes, crafted with the finest ingredients
+            </Typography>
           </Box>
-        ) : (
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: {
-                xs: 'repeat(auto-fill, minmax(90vw, 1fr))',
-                sm: 'repeat(auto-fill, minmax(200px, 1fr))',
-                md: 'repeat(auto-fill, minmax(240px, 1fr))',
-              },
-              gap: 2,
-              pb: 2,
-            }}
-          >
-            {filteredItems.length > 0 ? (
-              filteredItems.map((item, index) => {
-                const quantity = getQuantity(item.fid);
+        </Fade>
 
-                return (
-                  <motion.div
-                    key={item.fid}
-                    custom={index}
-                    initial="hidden"
-                    animate="visible"
-                    variants={cardVariants}
-                    whileHover={{ scale: 1.03 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <Card
-                      sx={{
-                        backgroundColor: '#111',
-                        color: '#fff',
-                        borderRadius: 3,
-                        boxShadow: '0 4px 20px rgba(255,255,255,0.05)',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        justifyContent: 'space-between',
-                        height: 270, // Fixed height for all cards
-                        transition: 'transform 0.2s, box-shadow 0.2s',
-                        '&:hover': {
-                          boxShadow: '0 6px 24px rgba(255,255,255,0.1)',
-                        },
-                      }}
-                    >
-                      <CardContent
-                        sx={{
-                          display: 'flex',
-                          flexDirection: 'column',
-                          alignItems: 'center',
-                          textAlign: 'center',
-                          flexGrow: 1,
-                          overflow: 'hidden',
-                        }}
-                      >
-                        <Tooltip title={item.fname} placement="top">
-                          <Typography 
-                            variant="h6" 
-                            sx={{ 
-                              mb: 1,
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: '100%',
-                              px: 1
-                            }}
-                          >
-                            {item.fname}
-                          </Typography>
-                        </Tooltip>
-                        <Typography variant="body2" sx={{ mb: 1, color: '#ccc' }}>
-                          ₹{item.cost}
-                        </Typography>
-                        <Chip
-                          label={item.veg ? 'Veg' : 'Non-Veg'}
-                          variant="outlined"
-                          size="small"
-                          sx={{ 
-                            borderColor: item.veg ? 'success.main' : 'error.main',
-                            color: item.veg ? 'success.main' : 'error.main',
-                            mb: 1 
-                          }}
-                        />
-                        <Divider sx={{ my: 1, borderColor: '#333', width: '80%' }} />
-                        <Tooltip title={item.catname} placement="bottom">
-                          <Typography 
-                            variant="caption" 
-                            color="text.secondary"
-                            sx={{
-                              whiteSpace: 'nowrap',
-                              overflow: 'hidden',
-                              textOverflow: 'ellipsis',
-                              maxWidth: '100%',
-                              px: 1
-                            }}
-                          >
-                            {item.catname}
-                          </Typography>
-                        </Tooltip>
-                      </CardContent>
-                      <CardActions sx={{ justifyContent: 'center', pb: 2 }}>
-                        {!token || quantity === 0 ? (
-                          <Button
-                            variant="outlined"
-                            disabled={cartLoading}
-                            sx={{
-                              color: '#fff',
-                              borderColor: '#fff',
-                              '&:hover': { 
-                                backgroundColor: '#fff', 
-                                color: '#000',
-                              },
-                              borderRadius: 2,
-                              textTransform: 'none',
-                              minWidth: 140,
-                              '&.Mui-disabled': {
-                                color: 'rgba(255,255,255,0.5)',
-                                borderColor: 'rgba(255,255,255,0.2)'
-                              }
-                            }}
-                            endIcon={cartLoading ? <CircularProgress size={20} color="inherit" /> : <RestaurantMenuIcon />}
-                            onClick={() => addToCart(item.fid, item.fname)}
-                          >
-                            {cartLoading ? 'Adding...' : 'Add to Cart'}
-                          </Button>
-                        ) : (
-                          <Box sx={{ 
-                            display: 'flex', 
-                            alignItems: 'center', 
-                            gap: 1,
-                            border: '1px solid rgba(255,255,255,0.2)',
-                            borderRadius: 2,
-                            px: 1,
-                            py: 0.5
-                          }}>
-                            <IconButton
-                              size="small"
-                              disabled={cartLoading}
-                              sx={{ 
-                                color: '#fff',
-                                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                                '&.Mui-disabled': {
-                                  color: 'rgba(255,255,255,0.3)'
-                                }
-                              }}
-                              onClick={() => removeFromCart(item.fid, item.fname)}
-                            >
-                              {cartLoading ? <CircularProgress size={20} color="inherit" /> : <RemoveIcon fontSize="small" />}
-                            </IconButton>
-                            <Typography sx={{ minWidth: 24, textAlign: 'center' }}>
-                              {quantity}
-                            </Typography>
-                            <IconButton
-                              size="small"
-                              disabled={cartLoading}
-                              sx={{ 
-                                color: '#fff',
-                                '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' },
-                                '&.Mui-disabled': {
-                                  color: 'rgba(255,255,255,0.3)'
-                                }
-                              }}
-                              onClick={() => addToCart(item.fid, item.fname)}
-                            >
-                              {cartLoading ? <CircularProgress size={20} color="inherit" /> : <AddIcon fontSize="small" />}
-                            </IconButton>
-                          </Box>
-                        )}
-                      </CardActions>
-                    </Card>
-                  </motion.div>
-                );
-              })
-            ) : (
-              <Typography
-                variant="h6"
-                color="rgba(255,255,255,0.7)"
-                sx={{ 
-                  gridColumn: '1 / -1', 
-                  textAlign: 'center', 
-                  mt: 4,
+        {/* Error display */}
+        {error && (
+          <Fade in timeout={500}>
+                         <Paper
+               sx={{
+                 bgcolor: 'rgba(255, 255, 255, 0.05)',
+                 border: '1px solid rgba(255, 255, 255, 0.2)',
+                 borderRadius: 3,
+                 p: 3,
+                 mb: 4,
+                 textAlign: 'center',
+               }}
+             >
+              <Typography color="error" sx={{ mb: 2 }}>{error}</Typography>
+              <Button 
+                variant="outlined" 
+                color="error" 
+                onClick={fetchMenuItems}
+                startIcon={<TrendingIcon />}
+                sx={{ borderRadius: 2 }}
+              >
+                Retry
+              </Button>
+            </Paper>
+          </Fade>
+        )}
+
+        {/* Search and Filter Section */}
+        <Fade in timeout={1000}>
+          <Box sx={{ mb: 6 }}>
+            {/* Search Bar */}
+            <Box sx={{ maxWidth: 500, mx: 'auto', mb: 4 }}>
+              <TextField
+                fullWidth
+                variant="outlined"
+                placeholder="Search for your favorite dishes..."
+                defaultValue={searchTerm}
+                onChange={(e) => handleSearchChange(e.target.value)}
+                InputProps={{
+                                     startAdornment: (
+                     <InputAdornment position="start">
+                       <SearchIcon sx={{ fontSize: 24, color: 'rgba(255,255,255,0.6)' }} />
+                     </InputAdornment>
+                   ),
+                   endAdornment: searchTerm && (
+                     <InputAdornment position="end">
+                       <IconButton
+                         size="small"
+                         onClick={() => setSearchTerm('')}
+                         sx={{ color: 'rgba(255,255,255,0.6)' }}
+                       >
+                         <ClearIcon />
+                       </IconButton>
+                     </InputAdornment>
+                   ),
+                   sx: {
+                     bgcolor: 'rgba(255,255,255,0.05)',
+                     borderRadius: 3,
+                     color: '#fff',
+                     '& .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'rgba(255,255,255,0.2)',
+                     },
+                     '&:hover .MuiOutlinedInput-notchedOutline': {
+                       borderColor: 'rgba(255,255,255,0.4)',
+                     },
+                     '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                       borderColor: '#fff',
+                     },
+                     '& .MuiInputBase-input': {
+                       color: '#fff',
+                       fontWeight: 500,
+                       fontSize: '1rem',
+                       '&::placeholder': {
+                         color: 'rgba(255,255,255,0.5)',
+                         opacity: 1,
+                       },
+                     },
+                   },
+                }}
+              />
+            </Box>
+
+            {/* Category Filters */}
+            <Box sx={{ textAlign: 'center' }}>
+                             <Typography variant="subtitle1" sx={{ mb: 2, color: 'rgba(255,255,255,0.8)', fontWeight: 600 }}>
+                 <FilterIcon sx={{ mr: 1, verticalAlign: 'middle' }} />
+                 Filter by Category
+               </Typography>
+              <Box
+                sx={{
                   display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'center',
-                  gap: 2
+                  flexWrap: 'wrap',
+                  gap: 1.5,
+                  justifyContent: 'center',
+                  maxWidth: 800,
+                  mx: 'auto',
                 }}
               >
-                No items found
-                {searchTerm && (
-                  <Button 
-                    variant="outlined" 
-                    onClick={() => setSearchTerm('')}
-                    sx={{ color: '#fff', borderColor: '#fff' }}
-                  >
-                    Clear search
-                  </Button>
-                )}
-              </Typography>
-            )}
+                {categories.map((cat) => (
+                  <Chip
+                    key={cat}
+                    label={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    clickable
+                    icon={selectedCategory === cat ? <StarIcon /> : undefined}
+                                         sx={{
+                       bgcolor: selectedCategory === cat 
+                         ? '#fff' 
+                         : 'rgba(255,255,255,0.05)',
+                       color: selectedCategory === cat ? '#000' : 'rgba(255,255,255,0.8)',
+                       border: selectedCategory === cat 
+                         ? 'none' 
+                         : '1px solid rgba(255,255,255,0.2)',
+                       borderRadius: 3,
+                       fontWeight: 600,
+                       fontSize: '0.875rem',
+                       px: 2,
+                       py: 1,
+                       transition: 'all 0.3s ease',
+                       '&:hover': {
+                         bgcolor: selectedCategory === cat 
+                           ? '#fff' 
+                           : 'rgba(255,255,255,0.1)',
+                         transform: 'translateY(-2px)',
+                         boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                       },
+                     }}
+                  />
+                ))}
+              </Box>
+            </Box>
           </Box>
-        )}
-      </Box>
+        </Fade>
 
-      {/* Checkout Button */}
+                 {/* Menu Items Grid */}
+         <AnimatePresence>
+           {loading ? (
+             <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
+               {Array.from({ length: 8 }).map((_, index) => (
+                 <Grid item xs={12} sm={6} md={4} lg={3} key={index} sx={{ minWidth: { xs: '100%', sm: '280px', md: '280px', lg: '280px' } }}>
+                   <MenuItemSkeleton />
+                 </Grid>
+               ))}
+             </Grid>
+           ) : (
+             <>
+               {filteredItems.length > 0 ? (
+                 <Grid container spacing={3} sx={{ justifyContent: 'center' }}>
+                   {filteredItems.map((item, index) => {
+                     const quantity = getQuantity(item.fid);
+
+                     return (
+                       <Grid item xs={12} sm={6} md={4} lg={3} key={item.fid} sx={{ minWidth: { xs: '100%', sm: '280px', md: '280px', lg: '280px' } }}>
+                        <motion.div
+                          custom={index}
+                          initial="hidden"
+                          animate="visible"
+                          variants={cardVariants}
+                          whileHover="hover"
+                          whileTap="tap"
+                          layout
+                        >
+                                                     <Card
+                             sx={{
+                               background: '#1e1e1e',
+                               border: '1px solid rgba(255,255,255,0.1)',
+                               borderRadius: 4,
+                               height: 320,
+                               width: '100%',
+                               maxWidth: '280px',
+                               mx: 'auto',
+                               display: 'flex',
+                               flexDirection: 'column',
+                               justifyContent: 'space-between',
+                               overflow: 'hidden',
+                               position: 'relative',
+                               boxShadow: '0 2px 8px rgba(0,0,0,0.3)',
+                               '&::before': {
+                                 content: '""',
+                                 position: 'absolute',
+                                 top: 0,
+                                 left: 0,
+                                 right: 0,
+                                 height: '3px',
+                                 background: item.veg ? '#fff' : '#888',
+                               },
+                             }}
+                           >
+                            <CardContent
+                              sx={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                textAlign: 'center',
+                                flexGrow: 1,
+                                p: 3,
+                                pt: 4,
+                              }}
+                            >
+                              {/* Item Name */}
+                              <Tooltip title={item.fname} placement="top">
+                                                                 <Typography 
+                                   variant="h6" 
+                                   sx={{ 
+                                     mb: 1.5,
+                                     fontWeight: 700,
+                                     whiteSpace: 'nowrap',
+                                     overflow: 'hidden',
+                                     textOverflow: 'ellipsis',
+                                     maxWidth: '100%',
+                                     px: 1,
+                                     color: '#fff',
+                                   }}
+                                 >
+                                   {item.fname}
+                                 </Typography>
+                               </Tooltip>
+
+                               {/* Price */}
+                               <Typography 
+                                 variant="h5" 
+                                 sx={{ 
+                                   mb: 2, 
+                                   fontWeight: 800,
+                                   color: '#fff',
+                                 }}
+                               >
+                                 ₹{item.cost}
+                               </Typography>
+
+                               {/* Veg/Non-Veg Badge */}
+                               <Chip
+                                 label={item.veg ? 'Vegetarian' : 'Non-Vegetarian'}
+                                 variant="outlined"
+                                 size="small"
+                                 icon={item.veg ? <FavoriteIcon /> : <RestaurantMenuIcon />}
+                                 sx={{ 
+                                   bgcolor: 'transparent',
+                                   color: item.veg ? '#fff' : '#888',
+                                   border: `1px solid ${item.veg ? '#fff' : '#888'}`,
+                                   mb: 2,
+                                   fontWeight: 600,
+                                   fontSize: '0.75rem',
+                                 }}
+                               />
+
+                               <Divider sx={{ my: 2, borderColor: 'rgba(255,255,255,0.1)', width: '80%' }} />
+
+                               {/* Category */}
+                               <Tooltip title={item.catname} placement="bottom">
+                                 <Typography 
+                                   variant="caption" 
+                                   sx={{
+                                     color: 'rgba(255,255,255,0.6)',
+                                     fontWeight: 500,
+                                     textTransform: 'uppercase',
+                                     letterSpacing: 0.5,
+                                   }}
+                                 >
+                                   {item.catname}
+                                 </Typography>
+                               </Tooltip>
+                            </CardContent>
+
+                            {/* Action Buttons */}
+                            <CardActions sx={{ justifyContent: 'center', pb: 3, px: 3 }}>
+                              {!token || quantity === 0 ? (
+                                <Button
+                                  variant="contained"
+                                  disabled={cartLoading}
+                                  fullWidth
+                                                                     sx={{
+                                     background: '#fff',
+                                     color: '#000',
+                                     borderRadius: 3,
+                                     textTransform: 'none',
+                                     fontWeight: 600,
+                                     fontSize: '0.875rem',
+                                     py: 1.5,
+                                     boxShadow: '0 4px 12px rgba(255,255,255,0.2)',
+                                     '&:hover': {
+                                       background: '#e0e0e0',
+                                       boxShadow: '0 6px 16px rgba(255,255,255,0.3)',
+                                       transform: 'translateY(-2px)',
+                                     },
+                                     '&.Mui-disabled': {
+                                       background: 'rgba(255,255,255,0.1)',
+                                       color: 'rgba(255,255,255,0.5)',
+                                     }
+                                   }}
+                                  startIcon={cartLoading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
+                                  onClick={() => addToCart(item.fid, item.fname)}
+                                >
+                                  {cartLoading ? 'Adding...' : 'Add to Cart'}
+                                </Button>
+                              ) : (
+                                                                 <Box sx={{ 
+                                   display: 'flex', 
+                                   alignItems: 'center', 
+                                   gap: 1,
+                                   bgcolor: 'rgba(255,255,255,0.05)',
+                                   borderRadius: 3,
+                                   px: 2,
+                                   py: 1,
+                                   border: '1px solid rgba(255,255,255,0.1)',
+                                   width: '100%',
+                                   justifyContent: 'space-between',
+                                 }}>
+                                   <IconButton
+                                     size="small"
+                                     disabled={cartLoading}
+                                     sx={{ 
+                                       color: '#fff',
+                                       '&:hover': { 
+                                         backgroundColor: 'rgba(255,255,255,0.1)',
+                                         transform: 'scale(1.1)',
+                                       },
+                                       '&.Mui-disabled': {
+                                         color: 'rgba(255,255,255,0.3)'
+                                       }
+                                     }}
+                                     onClick={() => removeFromCart(item.fid, item.fname)}
+                                   >
+                                     {cartLoading ? <CircularProgress size={20} color="inherit" /> : <RemoveIcon />}
+                                   </IconButton>
+                                   
+                                   <Typography 
+                                     sx={{ 
+                                       minWidth: 32, 
+                                       textAlign: 'center',
+                                       fontWeight: 700,
+                                       fontSize: '1.1rem',
+                                       color: '#fff',
+                                     }}
+                                   >
+                                     {quantity}
+                                   </Typography>
+                                   
+                                   <IconButton
+                                     size="small"
+                                     disabled={cartLoading}
+                                     sx={{ 
+                                       color: '#fff',
+                                       '&:hover': { 
+                                         backgroundColor: 'rgba(255,255,255,0.1)',
+                                         transform: 'scale(1.1)',
+                                       },
+                                       '&.Mui-disabled': {
+                                         color: 'rgba(255,255,255,0.3)'
+                                       }
+                                     }}
+                                     onClick={() => addToCart(item.fid, item.fname)}
+                                   >
+                                     {cartLoading ? <CircularProgress size={20} color="inherit" /> : <AddIcon />}
+                                   </IconButton>
+                                 </Box>
+                              )}
+                            </CardActions>
+                          </Card>
+                        </motion.div>
+                      </Grid>
+                    );
+                  })}
+                </Grid>
+              ) : (
+                <Zoom in timeout={500}>
+                                     <Box
+                     sx={{
+                       textAlign: 'center',
+                       py: 8,
+                       color: 'rgba(255,255,255,0.7)',
+                     }}
+                   >
+                     <RestaurantMenuIcon sx={{ fontSize: 64, mb: 2, opacity: 0.5 }} />
+                     <Typography variant="h5" sx={{ mb: 2, fontWeight: 600 }}>
+                       No items found
+                     </Typography>
+                     <Typography variant="body1" sx={{ mb: 3, opacity: 0.8 }}>
+                       {searchTerm ? 'Try adjusting your search terms' : 'Please check back later'}
+                     </Typography>
+                     {searchTerm && (
+                       <Button 
+                         variant="outlined" 
+                         onClick={() => setSearchTerm('')}
+                         startIcon={<ClearIcon />}
+                         sx={{ 
+                           color: '#fff', 
+                           borderColor: '#fff',
+                           borderRadius: 3,
+                           '&:hover': {
+                             borderColor: '#ccc',
+                             backgroundColor: 'rgba(255,255,255,0.1)',
+                           }
+                         }}
+                       >
+                         Clear Search
+                       </Button>
+                     )}
+                   </Box>
+                </Zoom>
+              )}
+            </>
+          )}
+        </AnimatePresence>
+      </Container>
+
+      {/* Enhanced Checkout Button */}
       {token && totalItemsInCart > 0 && (
-        <Box
-          sx={{
-            position: 'fixed',
-            bottom: 16,
-            left: 0,
-            width: '100%',
-            display: 'flex',
-            justifyContent: 'center',
-            zIndex: 999,
-            px: 2,
-          }}
+        <motion.div
+          initial={{ y: 100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          exit={{ y: 100, opacity: 0 }}
+          transition={{ duration: 0.5, ease: 'easeOut' }}
         >
-          <Button
-            variant="contained"
-            color="primary"
-            onClick={() => navigate('/cart')}
-            disabled={cartLoading}
-            startIcon={
-              <Badge badgeContent={totalItemsInCart} color="secondary">
-                <ShoppingCartIcon />
-              </Badge>
-            }
+          <Box
             sx={{
+              position: 'fixed',
+              bottom: 24,
+              left: 0,
               width: '100%',
-              maxWidth: 480,
-              borderRadius: 3,
-              fontWeight: 'bold',
-              py: 1.5,
-              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-              '&.Mui-disabled': {
-                backgroundColor: 'rgba(255,255,255,0.12)'
-              }
+              display: 'flex',
+              justifyContent: 'center',
+              zIndex: 999,
+              px: 3,
             }}
           >
-            {cartLoading ? 'Processing...' : 'Proceed to Checkout'}
-          </Button>
-        </Box>
+            <Button
+              variant="contained"
+              onClick={() => navigate('/cart')}
+              disabled={cartLoading}
+              startIcon={
+                <Badge 
+                  badgeContent={totalItemsInCart} 
+                  color="secondary"
+                                     sx={{
+                     '& .MuiBadge-badge': {
+                       background: '#fff',
+                       color: '#000',
+                       fontWeight: 700,
+                     }
+                   }}
+                 >
+                   <ShoppingCartIcon />
+                 </Badge>
+               }
+               sx={{
+                 background: '#fff',
+                 color: '#000',
+                 borderRadius: 4,
+                 fontWeight: 700,
+                 fontSize: '1rem',
+                 py: 2,
+                 px: 4,
+                 minWidth: 300,
+                 boxShadow: '0 8px 24px rgba(255,255,255,0.3)',
+                 '&:hover': {
+                   background: '#e0e0e0',
+                   boxShadow: '0 12px 32px rgba(255,255,255,0.4)',
+                   transform: 'translateY(-2px)',
+                 },
+                 '&.Mui-disabled': {
+                   background: 'rgba(255,255,255,0.1)',
+                   color: 'rgba(255,255,255,0.5)',
+                 }
+               }}
+            >
+              {cartLoading ? (
+                <>
+                  <CircularProgress size={20} sx={{ mr: 1, color: 'inherit' }} />
+                  Processing...
+                </>
+              ) : (
+                `Proceed to Checkout (${totalItemsInCart} items)`
+              )}
+            </Button>
+          </Box>
+        </motion.div>
       )}
 
-      {/* Snackbar for notifications */}
+      {/* Enhanced Snackbar */}
       <Snackbar
         open={snackbarOpen}
-        autoHideDuration={3000}
+        autoHideDuration={4000}
         onClose={() => setSnackbarOpen(false)}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+        TransitionComponent={Zoom}
       >
         <Alert 
           onClose={() => setSnackbarOpen(false)} 
           severity={snackbarSeverity}
-          sx={{ width: '100%' }}
+          sx={{ 
+            width: '100%',
+            borderRadius: 3,
+            fontWeight: 600,
+            '& .MuiAlert-icon': {
+              fontSize: 24,
+            }
+          }}
         >
           {snackbarMessage}
         </Alert>
