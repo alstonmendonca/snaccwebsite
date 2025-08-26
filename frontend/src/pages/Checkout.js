@@ -47,6 +47,42 @@ export default function Checkout() {
     if (reason === 'clickaway') return;
     setSnackbarOpen(false);
     };
+    const sendWhatsAppMessage = () => {
+      // Debug cartItems
+      console.log('CartItems:', cartItems);
+      
+      // Format order items with correct property names
+      let itemsList = 'No items found';
+      
+      if (cartItems && cartItems.length > 0) {
+        itemsList = cartItems.map(item => {
+          // Use the correct property names from Cart.js
+          const itemName = item.fname || 'Unknown Item';
+          const itemQuantity = item.quantity || 1;
+          const itemPrice = item.cost || 0;
+          
+          return `• ${itemName} x${itemQuantity} - ₹${(itemPrice * itemQuantity).toFixed(2)}`;
+        }).join('\n');
+      }
+
+      // Create WhatsApp message
+      const message = ` *New Order*\n\n` +
+        `*Customer Details:*\n` +
+        `Name: ${name}\n` +
+        `Phone: ${phone}\n\n` +
+        `*Order Items:*\n${itemsList}\n\n` +
+        `*Total Amount:* ₹${totalPrice.toFixed(2)}\n` +
+        `*Payment Method:* ${paymentMethod === 'online' ? 'Pay Online via UPI' : 'Pay at Cafe'}\n` +
+        `*Order Time:* ${dayjs().format('DD/MM/YYYY hh:mm A')}\n\n`;
+
+      // Encode message for URL
+      const encodedMessage = encodeURIComponent(message);
+      
+      // Open WhatsApp with the message
+      const whatsappUrl = `https://wa.me/+919353518164?text=${encodedMessage}`;
+      window.open(whatsappUrl, '_blank');
+    };
+
     const handleSubmit = async () => {
       setLoading(true);
       const payload = {
@@ -68,6 +104,9 @@ export default function Checkout() {
         setSnackbarMsg('Order placed successfully!');
         setSnackbarSeverity('success');
         setSnackbarOpen(true);
+
+        // Send WhatsApp message after successful order placement
+        sendWhatsAppMessage();
 
         setTimeout(() => {
           navigate('/orders');
